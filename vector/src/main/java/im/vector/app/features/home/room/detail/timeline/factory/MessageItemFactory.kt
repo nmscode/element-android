@@ -80,12 +80,17 @@ import im.vector.app.features.voice.AudioWaveformView
 import im.vector.lib.core.utils.epoxy.charsequence.toEpoxyCharSequence
 import me.gujun.android.span.span
 import org.matrix.android.sdk.api.MatrixUrls.isMxcUrl
+import org.matrix.android.sdk.api.query.QueryStringValue
 import org.matrix.android.sdk.api.session.Session
+import org.matrix.android.sdk.api.session.content.ContentUrlResolver
 import org.matrix.android.sdk.api.session.crypto.attachments.toElementToDecrypt
+import org.matrix.android.sdk.api.session.events.model.EventType
 import org.matrix.android.sdk.api.session.events.model.RelationType
 import org.matrix.android.sdk.api.session.events.model.content.EncryptedEventContent
 import org.matrix.android.sdk.api.session.events.model.isThread
 import org.matrix.android.sdk.api.session.events.model.toModel
+import org.matrix.android.sdk.api.session.getRoom
+import org.matrix.android.sdk.api.session.room.getStateEvent
 import org.matrix.android.sdk.api.session.room.model.message.MessageAudioContent
 import org.matrix.android.sdk.api.session.room.model.message.MessageBeaconInfoContent
 import org.matrix.android.sdk.api.session.room.model.message.MessageContent
@@ -105,6 +110,7 @@ import org.matrix.android.sdk.api.session.room.model.message.getThumbnailUrl
 import org.matrix.android.sdk.api.session.room.timeline.getLastMessageContent
 import org.matrix.android.sdk.api.settings.LightweightSettingsStorage
 import org.matrix.android.sdk.api.util.MimeTypes
+import timber.log.Timber
 import javax.inject.Inject
 
 class MessageItemFactory @Inject constructor(
@@ -185,9 +191,23 @@ class MessageItemFactory @Inject constructor(
 
         //        val all = event.root.toContent()
         //        val ev = all.toModel<Event>()
+
+        val room=session.getRoom(roomId)
+        val rawEmotes=room?.getStateEvent(EventType.STATE_ROOM_EMOTES,QueryStringValue.IsEmpty)
+                ?.content
+                ?.toMap()
+        //val rawEmotes= mutableMapOf<String,String>()
+        val contentResolver=session.contentUrlResolver()
+        val finalEmotes= mutableMapOf<String,String>()
+        if (rawEmotes != null) {
+            for((key,value) in rawEmotes){
+                finalEmotes[":"+key+":"]="<img style='height:80px;' src='" +contentResolver.resolveFullSize(value.toString()) + "'/>"
+
+            }
+        }
         val messageItem = when (messageContent) {
             is MessageEmoteContent -> buildEmoteMessageItem(messageContent, informationData, highlight, callback, attributes)
-            is MessageTextContent -> buildItemForTextContent(messageContent, informationData, highlight, callback, attributes)
+            is MessageTextContent -> buildItemForTextContent(messageContent, informationData, highlight, callback, attributes,finalEmotes)
             is MessageImageInfoContent -> buildImageMessageItem(messageContent, informationData, highlight, callback, attributes)
             is MessageNoticeContent -> buildNoticeMessageItem(messageContent, informationData, highlight, callback, attributes)
             is MessageVideoContent -> buildVideoMessageItem(messageContent, informationData, highlight, callback, attributes)
@@ -522,10 +542,15 @@ class MessageItemFactory @Inject constructor(
             highlight: Boolean,
             callback: TimelineEventController.Callback?,
             attributes: AbsMessageItem.Attributes,
+            emotes:Map<String,String>,
     ): VectorEpoxyModel<*>? {
         val matrixFormattedBody = messageContent.matrixFormattedBody
+        val emotesBody: String
+        emotesBody = messageContent.body.replace(Regex(":[^:]+:")) { emotes[it.value] ?: it.value }
         return if (matrixFormattedBody != null) {
             buildFormattedTextItem(matrixFormattedBody, informationData, highlight, callback, attributes)
+        } else if (emotesBody!=messageContent.body){
+            buildFormattedTextItem(emotesBody, informationData, highlight, callback, attributes)
         } else {
             buildMessageTextItem(messageContent.body, false, informationData, highlight, callback, attributes)
         }
@@ -574,6 +599,8 @@ class MessageItemFactory @Inject constructor(
                 .attributes(attributes)
                 .highlighted(highlight)
                 .movementMethod(createLinkMovementMethod(callback))
+
+
     }
 
     private fun annotateWithEdited(

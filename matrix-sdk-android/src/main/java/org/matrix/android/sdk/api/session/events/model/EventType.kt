@@ -43,6 +43,7 @@ object EventType {
     const val STATE_ROOM_NAME = "m.room.name"
     const val STATE_ROOM_TOPIC = "m.room.topic"
     const val STATE_ROOM_AVATAR = "m.room.avatar"
+    const val STATE_ROOM_EMOTES = "m.room.emotes"
     const val STATE_ROOM_MEMBER = "m.room.member"
     const val STATE_ROOM_THIRD_PARTY_INVITE = "m.room.third_party_invite"
     const val STATE_ROOM_CREATE = "m.room.create"

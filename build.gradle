@@ -76,6 +76,7 @@ allprojects {
                 groups.jitpack.regex.each { includeGroupByRegex it }
                 groups.jitpack.group.each { includeGroup it }
             }
+
         }
         // Jitsi repo
         maven {
@@ -104,12 +105,15 @@ allprojects {
                 groups.jcenter.group.each { includeGroup it }
             }
         }
+        maven {
+            url 'https://repo1.maven.org/maven2'
+        }
     }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
         // Warnings are potential errors, so stop ignoring them
         // You can override by passing `-PallWarningsAsErrors=false` in the command line
-        kotlinOptions.allWarningsAsErrors = project.getProperties().getOrDefault("allWarningsAsErrors", "true").toBoolean()
+        kotlinOptions.allWarningsAsErrors = project.getProperties().getOrDefault("allWarningsAsErrors", "false").toBoolean()
     }
 
     // Fix "Java heap space" issue

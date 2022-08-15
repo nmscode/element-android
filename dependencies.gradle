@@ -118,7 +118,8 @@ ext.libs = [
                 'core'                   : "io.noties.markwon:core:$markwon",
                 'extLatex'               : "io.noties.markwon:ext-latex:$markwon",
                 'inlineParser'           : "io.noties.markwon:inline-parser:$markwon",
-                'html'                   : "io.noties.markwon:html:$markwon"
+                'html'                   : "io.noties.markwon:html:$markwon",
+                'image'                  : "io.noties.markwon:image:$markwon"
         ],
         airbnb      : [
                 'epoxy'                  : "com.airbnb.android:epoxy:$epoxy",

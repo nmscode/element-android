@@ -36,6 +36,7 @@ import im.vector.app.features.media.ImageContentRenderer
 import im.vector.lib.core.utils.epoxy.charsequence.EpoxyCharSequence
 import io.noties.markwon.MarkwonPlugin
 import org.matrix.android.sdk.api.extensions.orFalse
+import timber.log.Timber
 
 @EpoxyModelClass
 abstract class MessageTextItem : AbsMessageItem<MessageTextItem.Holder>() {
@@ -106,10 +107,12 @@ abstract class MessageTextItem : AbsMessageItem<MessageTextItem.Holder>() {
     }
 
     private fun AppCompatTextView.setTextWithEmojiSupport(message: CharSequence?, bindingOptions: BindingOptions?) {
+
         if (bindingOptions?.canUseTextFuture.orFalse() && message != null) {
             val textFuture = PrecomputedTextCompat.getTextFuture(message, TextViewCompat.getTextMetricsParams(this), null)
             setTextFuture(textFuture)
         } else {
+
             setTextFuture(null)
             text = message
         }

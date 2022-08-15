@@ -454,12 +454,14 @@ dependencies {
     implementation libs.markwon.extLatex
     implementation libs.markwon.inlineParser
     implementation libs.markwon.html
+    implementation libs.markwon.image
     implementation 'com.googlecode.htmlcompressor:htmlcompressor:1.5.2'
     implementation 'me.saket:better-link-movement-method:2.2.0'
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation libs.androidx.autoFill
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.github.hyuwah:DraggableView:1.0.0'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.24'
 
     // Custom Tab
     implementation 'androidx.browser:browser:1.4.0'
