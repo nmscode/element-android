@@ -16,13 +16,16 @@
 
 package im.vector.app.features.settings.devices.v2.list
 
+import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import android.widget.TextView
 import com.airbnb.epoxy.EpoxyAttribute
 import com.airbnb.epoxy.EpoxyModelClass
 import im.vector.app.R
+import im.vector.app.core.epoxy.ClickListener
 import im.vector.app.core.epoxy.VectorEpoxyHolder
 import im.vector.app.core.epoxy.VectorEpoxyModel
+import im.vector.app.core.epoxy.onClick
 import im.vector.app.core.resources.StringProvider
 import im.vector.app.core.ui.views.ShieldImageView
 import org.matrix.android.sdk.api.session.crypto.model.RoomEncryptionTrustLevel
@@ -43,10 +46,21 @@ abstract class OtherSessionItem : VectorEpoxyModel<OtherSessionItem.Holder>(R.la
     var sessionDescription: String? = null
 
     @EpoxyAttribute
+    var sessionDescriptionDrawable: Drawable? = null
+
+    @EpoxyAttribute
     lateinit var stringProvider: StringProvider
+
+    @EpoxyAttribute(EpoxyAttribute.Option.DoNotHash)
+    var clickListener: ClickListener? = null
 
     override fun bind(holder: Holder) {
         super.bind(holder)
+        holder.view.onClick(clickListener)
+        if (clickListener == null) {
+            holder.view.isClickable = false
+        }
+
         when (deviceType) {
             DeviceType.MOBILE -> {
                 holder.otherSessionDeviceTypeImageView.setImageResource(R.drawable.ic_device_type_mobile)
@@ -68,6 +82,7 @@ abstract class OtherSessionItem : VectorEpoxyModel<OtherSessionItem.Holder>(R.la
         holder.otherSessionVerificationStatusImageView.render(roomEncryptionTrustLevel)
         holder.otherSessionNameTextView.text = sessionName
         holder.otherSessionDescriptionTextView.text = sessionDescription
+        holder.otherSessionDescriptionTextView.setCompoundDrawablesWithIntrinsicBounds(sessionDescriptionDrawable, null, null, null)
     }
 
     class Holder : VectorEpoxyHolder() {
