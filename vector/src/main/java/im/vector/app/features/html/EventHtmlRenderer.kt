@@ -40,6 +40,7 @@ import io.noties.markwon.ext.latex.JLatexMathPlugin
 import io.noties.markwon.ext.latex.JLatexMathTheme
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.image.ImagesPlugin
+import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.gif.GifMediaDecoder
 import io.noties.markwon.inlineparser.EntityInlineProcessor
 import io.noties.markwon.inlineparser.HtmlInlineProcessor
@@ -65,6 +66,7 @@ class EventHtmlRenderer @Inject constructor(
     private val builder = Markwon.builder(context)
             .usePlugin(ImagesPlugin.create { plugin -> // autoplayGif controls if GIF should be automatically started
                 plugin.addMediaDecoder(GifMediaDecoder.create( /*autoplayGif*/true))
+                plugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context))
             })
             .usePlugin(HtmlPlugin.create(htmlConfigure))
 

@@ -16,6 +16,7 @@
 
 package im.vector.app.features.home.room.detail.timeline.factory
 
+import android.net.Uri
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -23,12 +24,17 @@ import android.text.TextPaint
 import android.text.style.AbsoluteSizeSpan
 import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
+import android.util.Base64
 import android.view.View
+import android.webkit.MimeTypeMap
+import com.google.gson.Gson
+import com.squareup.moshi.Moshi
 import dagger.Lazy
 import im.vector.app.R
 import im.vector.app.core.epoxy.ClickListener
 import im.vector.app.core.epoxy.VectorEpoxyModel
 import im.vector.app.core.files.LocalFilesHelper
+import im.vector.app.core.intent.getMimeTypeFromUri
 import im.vector.app.core.resources.ColorProvider
 import im.vector.app.core.resources.StringProvider
 import im.vector.app.core.time.Clock
@@ -78,12 +84,15 @@ import im.vector.app.features.media.VideoContentRenderer
 import im.vector.app.features.settings.VectorPreferences
 import im.vector.app.features.voice.AudioWaveformView
 import im.vector.lib.core.utils.epoxy.charsequence.toEpoxyCharSequence
+import kotlinx.coroutines.runBlocking
 import me.gujun.android.span.span
+import org.json.JSONObject
 import org.matrix.android.sdk.api.MatrixUrls.isMxcUrl
 import org.matrix.android.sdk.api.query.QueryStringValue
 import org.matrix.android.sdk.api.session.Session
-import org.matrix.android.sdk.api.session.content.ContentUrlResolver
 import org.matrix.android.sdk.api.session.crypto.attachments.toElementToDecrypt
+import org.matrix.android.sdk.api.session.crypto.model.EncryptedFileInfo
+import org.matrix.android.sdk.api.session.crypto.model.EncryptedFileKey
 import org.matrix.android.sdk.api.session.events.model.EventType
 import org.matrix.android.sdk.api.session.events.model.RelationType
 import org.matrix.android.sdk.api.session.events.model.content.EncryptedEventContent
@@ -153,7 +162,65 @@ class MessageItemFactory @Inject constructor(
     private val textRenderer by lazy {
         textRendererFactory.create(roomId)
     }
+    suspend fun decryptEmote(raw: Map<String, EncryptedFileInfo>): Map<String,String> {
+        val final = mutableMapOf<String, String>()
+        Timber.v("hell"+raw.toString())
+        for ((key, value) in raw) {
+            val file=(session.fileService().downloadFile(
+                    fileName = key,
+                    mimeType = "image/*",
+                    url = value.url,
+                    elementToDecrypt = value.toElementToDecrypt()
+            ))
+            final[":" + key + ":"] = "<img style='height:80px;' src='file:///" + file.absolutePath + "'/>"
+            //Timber.v("emote:",final[":" + key + ":"])
+        }
+        return final
+    }
+    private var finalEmotes = mutableMapOf<String,String>()
+    fun getEmotes(){
+        val room=session.getRoom(roomId)
+        val rawEmotes= room?.getStateEvent(EventType.STATE_ROOM_EMOTES,QueryStringValue.IsEmpty)
+                ?.content
+                ?.toMap()?.toMutableMap()
+        //val rawEmotes= mutableMapOf<String,String>()
+        val contentResolver=session.contentUrlResolver()
+        //var finalEmotes= mutableMapOf<String,String>()
 
+        if (rawEmotes != null) {
+            if (session.cryptoService().isRoomEncrypted(roomId)) {
+                val gson = Gson()
+                for ((k, value) in rawEmotes) {
+                    rawEmotes[k] = gson.fromJson(gson.toJson(value), EncryptedFileInfo::class.java)
+                    rawEmotes[k] = EncryptedFileInfo(
+                            v = (rawEmotes[k] as EncryptedFileInfo).v,
+                            key = EncryptedFileKey(
+                                    alg = (rawEmotes[k] as EncryptedFileInfo).key?.alg,
+                                    ext = (rawEmotes[k] as EncryptedFileInfo).key?.ext,
+                                    k = (rawEmotes[k] as EncryptedFileInfo).key?.k,
+                                    keyOps = listOf("encrypt", "decrypt"),
+                                    kty = (rawEmotes[k] as EncryptedFileInfo).key?.kty
+                            ),
+                            iv = (rawEmotes[k] as EncryptedFileInfo).iv,
+                            hashes = (rawEmotes[k] as EncryptedFileInfo).hashes,
+                            url = (rawEmotes[k] as EncryptedFileInfo).url
+                    )
+                }
+                finalEmotes = runBlocking { decryptEmote(rawEmotes as Map<String, EncryptedFileInfo>) } as MutableMap<String, String>
+            } else {
+                for ((k, value) in rawEmotes) {
+                    val file= runBlocking { session.fileService().downloadFile(
+                            fileName = k,
+                            mimeType = "image/*",
+                            url = value as String,
+                            elementToDecrypt = null,
+                    )
+                    }
+                    finalEmotes[":" + k + ":"] = "<img style='height:80px;' src='file:///" + file.absolutePath + "'/>"
+                }
+            }
+        }
+    }
     fun create(params: TimelineItemFactoryParams): VectorEpoxyModel<*>? {
         val event = params.event
         val highlight = params.isHighlighted
@@ -192,18 +259,8 @@ class MessageItemFactory @Inject constructor(
         //        val all = event.root.toContent()
         //        val ev = all.toModel<Event>()
 
-        val room=session.getRoom(roomId)
-        val rawEmotes=room?.getStateEvent(EventType.STATE_ROOM_EMOTES,QueryStringValue.IsEmpty)
-                ?.content
-                ?.toMap()
-        //val rawEmotes= mutableMapOf<String,String>()
-        val contentResolver=session.contentUrlResolver()
-        val finalEmotes= mutableMapOf<String,String>()
-        if (rawEmotes != null) {
-            for((key,value) in rawEmotes){
-                finalEmotes[":"+key+":"]="<img style='height:80px;' src='" +contentResolver.resolveFullSize(value.toString()) + "'/>"
-
-            }
+        if(finalEmotes.isEmpty()){
+            getEmotes()
         }
         val messageItem = when (messageContent) {
             is MessageEmoteContent -> buildEmoteMessageItem(messageContent, informationData, highlight, callback, attributes)
