@@ -16,6 +16,9 @@
 
 package im.vector.app.features.home.room.detail.timeline.factory
 
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -120,6 +123,7 @@ import org.matrix.android.sdk.api.session.room.timeline.getLastMessageContent
 import org.matrix.android.sdk.api.settings.LightweightSettingsStorage
 import org.matrix.android.sdk.api.util.MimeTypes
 import timber.log.Timber
+import java.nio.file.Files
 import javax.inject.Inject
 
 class MessageItemFactory @Inject constructor(
@@ -162,16 +166,29 @@ class MessageItemFactory @Inject constructor(
     private val textRenderer by lazy {
         textRendererFactory.create(roomId)
     }
+
     suspend fun decryptEmote(raw: Map<String, EncryptedFileInfo>): Map<String,String> {
         val final = mutableMapOf<String, String>()
-        Timber.v("hell"+raw.toString())
+        //Timber.v("hell"+raw.toString())
         for ((key, value) in raw) {
-            val file=(session.fileService().downloadFile(
+            var file=(session.fileService().downloadFile(
                     fileName = key,
                     mimeType = "image/*",
                     url = value.url,
                     elementToDecrypt = value.toElementToDecrypt()
             ))
+            val source=ImageDecoder.createSource(file)
+            val drawable = ImageDecoder.decodeDrawable(source)
+            if (drawable is AnimatedImageDrawable) {
+                file=(session.fileService().downloadFile(
+                        fileName = key,
+                        mimeType = "image/gif",
+                        url = value.url,
+                        elementToDecrypt = value.toElementToDecrypt()
+                ))
+            }
+
+            //Timber.v("hello "+MimeTypeMap.getFileExtensionFromUrl(file.toString()))
             final[":" + key + ":"] = "<img style='height:80px;' src='file:///" + file.absolutePath + "'/>"
             //Timber.v("emote:",final[":" + key + ":"])
         }
