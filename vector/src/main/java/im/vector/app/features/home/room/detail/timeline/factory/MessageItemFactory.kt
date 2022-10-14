@@ -189,7 +189,7 @@ class MessageItemFactory @Inject constructor(
             }
 
             //Timber.v("hello "+MimeTypeMap.getFileExtensionFromUrl(file.toString()))
-            final[":" + key + ":"] = "<img style='height:80px;' src='file:///" + file.absolutePath + "'/>"
+            final[":" + key + ":"] = "<img style='height:80px;' src='file://" + file.absolutePath + "'/>"
             //Timber.v("emote:",final[":" + key + ":"])
         }
         return final

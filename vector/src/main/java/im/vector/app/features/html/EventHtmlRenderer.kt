@@ -73,10 +73,7 @@ class EventHtmlRenderer @Inject constructor(
     }
 
     private val builder = Markwon.builder(context)
-            .usePlugin(ImagesPlugin.create { plugin -> // autoplayGif controls if GIF should be automatically started
-                plugin.addMediaDecoder(GifMediaDecoder.create( /*autoplayGif*/true))
-                plugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context))
-            })
+
             .usePlugin(HtmlPlugin.create(htmlConfigure))
             .usePlugin(GlideImagesPlugin.create(object : GlideImagesPlugin.GlideStore {
                 override fun load(drawable: AsyncDrawable): RequestBuilder<Drawable> {
@@ -90,11 +87,14 @@ class EventHtmlRenderer @Inject constructor(
                     // We don't want to support other url schemes here, so just return a request for null
                     return Glide.with(context).load(null as String?)
                 }
-
                 override fun cancel(target: Target<*>) {
                     Glide.with(context).clear(target)
                 }
             }))
+            .usePlugin(ImagesPlugin.create { plugin -> // autoplayGif controls if GIF should be automatically started
+                plugin.addMediaDecoder(GifMediaDecoder.create( /*autoplayGif*/true))
+                plugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context))
+            })
 
     private val markwon = if (vectorPreferences.latexMathsIsEnabled()) {
         // If latex maths is enabled in app preferences, refomat it so Markwon recognises it

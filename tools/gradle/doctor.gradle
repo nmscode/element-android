@@ -74,7 +74,7 @@ doctor {
         /**
          * Ensure that we are using JAVA_HOME to build with this Gradle.
          */
-        ensureJavaHomeMatches = true
+        ensureJavaHomeMatches = false
         /**
          * Ensure we have JAVA_HOME set.
          */
