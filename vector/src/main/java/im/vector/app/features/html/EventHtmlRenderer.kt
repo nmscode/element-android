@@ -27,11 +27,17 @@ package im.vector.app.features.html
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.ImageDecoder
+import android.graphics.drawable.AnimatedImageDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Build
 import android.text.Spannable
+import androidx.annotation.RequiresApi
 import androidx.core.text.toSpannable
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
+import com.bumptech.glide.load.resource.gif.GifDrawable
 import com.bumptech.glide.request.target.Target
 import im.vector.app.core.di.ActiveSessionHolder
 import im.vector.app.core.resources.ColorProvider
@@ -48,15 +54,22 @@ import io.noties.markwon.image.ImagesPlugin
 import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.gif.GifMediaDecoder
 import io.noties.markwon.image.AsyncDrawable
+import io.noties.markwon.image.ImageItem
+import io.noties.markwon.image.SchemeHandler
 import io.noties.markwon.image.glide.GlideImagesPlugin
 import io.noties.markwon.inlineparser.EntityInlineProcessor
 import io.noties.markwon.inlineparser.HtmlInlineProcessor
 import io.noties.markwon.inlineparser.MarkwonInlineParser
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
+import kotlinx.coroutines.runBlocking
 import org.commonmark.node.Node
 import org.commonmark.parser.Parser
 import org.matrix.android.sdk.api.MatrixUrls.isMxcUrl
+import org.matrix.android.sdk.api.session.crypto.attachments.toElementToDecrypt
 import timber.log.Timber
+import java.io.InputStream
+import java.net.URL
+import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -75,7 +88,7 @@ class EventHtmlRenderer @Inject constructor(
     private val builder = Markwon.builder(context)
 
             .usePlugin(HtmlPlugin.create(htmlConfigure))
-            .usePlugin(GlideImagesPlugin.create(object : GlideImagesPlugin.GlideStore {
+            /*.usePlugin(GlideImagesPlugin.create(object : GlideImagesPlugin.GlideStore {
                 override fun load(drawable: AsyncDrawable): RequestBuilder<Drawable> {
                     val url = drawable.destination
                     if (url.isMxcUrl()) {
@@ -84,17 +97,60 @@ class EventHtmlRenderer @Inject constructor(
                         // Override size to avoid crashes for huge pictures
                         return Glide.with(context).load(imageUrl).override(500)
                     }
+
                     // We don't want to support other url schemes here, so just return a request for null
-                    return Glide.with(context).load(null as String?)
+                    return null
                 }
                 override fun cancel(target: Target<*>) {
                     Glide.with(context).clear(target)
                 }
-            }))
+            }))*/
             .usePlugin(ImagesPlugin.create { plugin -> // autoplayGif controls if GIF should be automatically started
+
+                plugin.addSchemeHandler(object : SchemeHandler() {
+                    @RequiresApi(Build.VERSION_CODES.P)
+                    override fun handle(raw: String, uri: Uri): ImageItem {
+
+                        val contentUrlResolver = activeSessionHolder.getActiveSession().contentUrlResolver()
+                        val imageUrl = contentUrlResolver.resolveFullSize(raw)
+                        var result = runBlocking {
+                            activeSessionHolder.getActiveSession().fileService()
+                                    .downloadFile(
+                                            fileName = raw,
+                                            mimeType = "image/*",
+                                            url = raw,
+                                            elementToDecrypt = null
+                                    )
+                        }
+
+                        val source= ImageDecoder.createSource(result)
+                        var drawable = ImageDecoder.decodeDrawable(source)
+                        if (drawable is AnimatedImageDrawable) {
+
+                            result = runBlocking {
+                                activeSessionHolder.getActiveSession().fileService()
+                                        .downloadFile(
+                                                fileName = raw,
+                                                mimeType = "image/gif",
+                                                url = raw,
+                                                elementToDecrypt = null
+                                        )
+                            }
+                            drawable = pl.droidsonroids.gif.GifDrawable(result)
+                        }
+
+                        return ImageItem.withResult(drawable)
+                    }
+
+                    override fun supportedSchemes(): MutableCollection<String> {
+                        return Collections.singleton("mxc")
+                    }
+                })
                 plugin.addMediaDecoder(GifMediaDecoder.create( /*autoplayGif*/true))
                 plugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context))
+
             })
+
 
     private val markwon = if (vectorPreferences.latexMathsIsEnabled()) {
         // If latex maths is enabled in app preferences, refomat it so Markwon recognises it

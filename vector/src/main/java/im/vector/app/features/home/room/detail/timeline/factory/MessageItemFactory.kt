@@ -20,6 +20,7 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
+import android.os.Build
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -30,6 +31,7 @@ import android.text.style.ForegroundColorSpan
 import android.util.Base64
 import android.view.View
 import android.webkit.MimeTypeMap
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.squareup.moshi.Moshi
 import dagger.Lazy
@@ -171,9 +173,9 @@ class MessageItemFactory @Inject constructor(
         textRendererFactory.create(roomId)
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     suspend fun decryptEmote(raw: Map<String, EncryptedFileInfo>): Map<String,String> {
         val final = mutableMapOf<String, String>()
-        //Timber.v("hell"+raw.toString())
         for ((key, value) in raw) {
             var file=(session.fileService().downloadFile(
                     fileName = key,
@@ -192,9 +194,7 @@ class MessageItemFactory @Inject constructor(
                 ))
             }
 
-            //Timber.v("hello "+MimeTypeMap.getFileExtensionFromUrl(file.toString()))
             final[":" + key + ":"] = "<img style='height:80px;' src='file://" + file.absolutePath + "'/>"
-            //Timber.v("emote:",final[":" + key + ":"])
         }
         return final
     }
@@ -633,7 +633,7 @@ class MessageItemFactory @Inject constructor(
             attributes: AbsMessageItem.Attributes,
             emotes:Map<String,String>,
     ): VectorEpoxyModel<*>? {
-        val matrixFormattedBody = messageContent.matrixFormattedBody
+        val matrixFormattedBody = messageContent.matrixFormattedBody?.replace(Regex("height=...."),"height='80'")
         val emotesBody: String
         emotesBody = messageContent.body.replace(Regex(":[^:]+:")) { emotes[it.value] ?: it.value }
         return if (matrixFormattedBody != null) {
