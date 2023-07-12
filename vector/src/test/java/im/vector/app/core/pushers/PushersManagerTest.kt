@@ -57,7 +57,7 @@ class PushersManagerTest {
     )
 
     @Test
-    fun `when enqueueRegisterPusher, then HttpPusher created and enqueued`() {
+    fun `when enqueueRegisterPusher, then HttpPusher created and enqueued`() = runTest {
         val pushKey = "abc"
         val gateway = "123"
         val pusherAppId = "app-id"
@@ -76,7 +76,7 @@ class PushersManagerTest {
                 deviceDisplayName = deviceDisplayName,
                 url = gateway,
                 enabled = true,
-                deviceId = session.sessionParams.deviceId!!,
+                deviceId = session.sessionParams.deviceId,
                 append = false,
                 withEventIdOnly = true,
         )
@@ -100,20 +100,5 @@ class PushersManagerTest {
         val pusher = pushersManager.getPusherForCurrentSession()
 
         pusher shouldBeEqualTo expectedPusher
-    }
-
-    @Test
-    fun `when togglePusherForCurrentSession, then do service toggle pusher`() = runTest {
-        val deviceId = "device_id"
-        val sessionParams = SessionParamsFixture.aSessionParams(
-                credentials = CredentialsFixture.aCredentials(deviceId = deviceId)
-        )
-        session.givenSessionParams(sessionParams)
-        val pusher = PusherFixture.aPusher(deviceId = deviceId)
-        pushersService.givenGetPushers(listOf(pusher))
-
-        pushersManager.togglePusherForCurrentSession(true)
-
-        pushersService.verifyTogglePusherCalled(pusher, true)
     }
 }

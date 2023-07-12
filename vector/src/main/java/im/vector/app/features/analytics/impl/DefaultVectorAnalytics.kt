@@ -19,6 +19,7 @@ package im.vector.app.features.analytics.impl
 import com.posthog.android.Options
 import com.posthog.android.PostHog
 import com.posthog.android.Properties
+import im.vector.app.BuildConfig
 import im.vector.app.core.di.NamedGlobalScope
 import im.vector.app.features.analytics.AnalyticsConfig
 import im.vector.app.features.analytics.VectorAnalytics
@@ -31,6 +32,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.matrix.android.sdk.api.extensions.orFalse
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,25 +42,32 @@ private val IGNORED_OPTIONS: Options? = null
 
 @Singleton
 class DefaultVectorAnalytics @Inject constructor(
-        postHogFactory: PostHogFactory,
-        private val sentryFactory: SentryFactory,
-        analyticsConfig: AnalyticsConfig,
+        private val postHogFactory: PostHogFactory,
+        private val sentryAnalytics: SentryAnalytics,
+        private val analyticsConfig: AnalyticsConfig,
         private val analyticsStore: AnalyticsStore,
         private val lateInitUserPropertiesFactory: LateInitUserPropertiesFactory,
         @NamedGlobalScope private val globalScope: CoroutineScope
 ) : VectorAnalytics {
 
-    private val posthog: PostHog? = when {
-        analyticsConfig.isEnabled -> postHogFactory.createPosthog()
-        else -> {
-            Timber.tag(analyticsTag.value).w("Analytics is disabled")
-            null
+    private var posthog: PostHog? = null
+
+    private fun createPosthog(): PostHog? {
+        return when {
+            analyticsConfig.isEnabled -> postHogFactory.createPosthog()
+            else -> {
+                Timber.tag(analyticsTag.value).w("Analytics is disabled")
+                null
+            }
         }
     }
 
     // Cache for the store values
     private var userConsent: Boolean? = null
     private var analyticsId: String? = null
+
+    // Cache for the properties to send
+    private var pendingUserProperties: UserProperties? = null
 
     override fun init() {
         observeUserConsent()
@@ -97,7 +106,7 @@ class DefaultVectorAnalytics @Inject constructor(
         setAnalyticsId("")
 
         // Close Sentry SDK.
-        sentryFactory.stopSentry()
+        sentryAnalytics.stopSentry()
     }
 
     private fun observeAnalyticsId() {
@@ -112,6 +121,7 @@ class DefaultVectorAnalytics @Inject constructor(
 
     private suspend fun identifyPostHog() {
         val id = analyticsId ?: return
+        if (!userConsent.orFalse()) return
         if (id.isEmpty()) {
             Timber.tag(analyticsTag.value).d("reset")
             posthog?.reset()
@@ -126,7 +136,7 @@ class DefaultVectorAnalytics @Inject constructor(
                 .onEach { consent ->
                     Timber.tag(analyticsTag.value).d("User consent updated to $consent")
                     userConsent = consent
-                    optOutPostHog()
+                    initOrStopPostHog()
                     initOrStopSentry()
                 }
                 .launchIn(globalScope)
@@ -135,14 +145,31 @@ class DefaultVectorAnalytics @Inject constructor(
     private fun initOrStopSentry() {
         userConsent?.let {
             when (it) {
-                true -> sentryFactory.initSentry()
-                false -> sentryFactory.stopSentry()
+                true -> sentryAnalytics.initSentry()
+                false -> sentryAnalytics.stopSentry()
             }
         }
     }
 
-    private fun optOutPostHog() {
-        userConsent?.let { posthog?.optOut(!it) }
+    private suspend fun initOrStopPostHog() {
+        userConsent?.let { _userConsent ->
+            when (_userConsent) {
+                true -> {
+                    posthog = createPosthog()
+                    posthog?.optOut(false)
+                    identifyPostHog()
+                    pendingUserProperties?.let { doUpdateUserProperties(it) }
+                    pendingUserProperties = null
+                }
+                false -> {
+                    // When opting out, ensure that the queue is flushed first, or it will be flushed later (after user has revoked consent)
+                    posthog?.flush()
+                    posthog?.optOut(true)
+                    posthog?.shutdown()
+                    posthog = null
+                }
+            }
+        }
     }
 
     override fun capture(event: VectorAnalyticsEvent) {
@@ -160,7 +187,17 @@ class DefaultVectorAnalytics @Inject constructor(
     }
 
     override fun updateUserProperties(userProperties: UserProperties) {
-        posthog?.identify(REUSE_EXISTING_ID, userProperties.getProperties()?.toPostHogUserProperties(), IGNORED_OPTIONS)
+        if (userConsent == true) {
+            doUpdateUserProperties(userProperties)
+        } else {
+            pendingUserProperties = userProperties
+        }
+    }
+
+    private fun doUpdateUserProperties(userProperties: UserProperties) {
+        posthog
+                ?.takeIf { userConsent == true }
+                ?.identify(REUSE_EXISTING_ID, userProperties.getProperties()?.toPostHogUserProperties(), IGNORED_OPTIONS)
     }
 
     private fun Map<String, Any?>?.toPostHogProperties(): Properties? {
@@ -178,6 +215,15 @@ class DefaultVectorAnalytics @Inject constructor(
     private fun Map<String, Any?>.toPostHogUserProperties(): Properties {
         return Properties().apply {
             putAll(this@toPostHogUserProperties.filter { it.value != null })
+            if (BuildConfig.FLAVOR == "rustCrypto") {
+                put("crypto", "rust")
+            }
         }
+    }
+
+    override fun trackError(throwable: Throwable) {
+        sentryAnalytics
+                .takeIf { userConsent == true }
+                ?.trackError(throwable)
     }
 }

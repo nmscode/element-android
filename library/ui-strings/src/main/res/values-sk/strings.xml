@@ -2001,8 +2001,6 @@
     <string name="cross_signing_verify_by_emoji">Interaktívne overte pomocou emotikonov</string>
     <string name="cross_signing_verify_by_text">Manuálne overte pomocou textu</string>
     <string name="verify_this_session">Overte nové prihlásenie s prístupom k vášmu účtu: %1$s</string>
-    <string name="verify_other_sessions">Overte všetky vaše relácie, aby ste si boli istý, že sú vaše správy a účet bezpečné</string>
-    <string name="review_logins">Skontrolujte, kde ste prihlásení</string>
     <string name="encrypted_unverified">Šifrované neovereným zariadením</string>
     <string name="default_message_emote_snow">pošle sneženie ❄️</string>
     <string name="default_message_emote_confetti">pošle konfety 🎉</string>
@@ -2421,7 +2419,6 @@
     <string name="login_signin_sso">Pokračovať pomocou jednotného prihlásenia SSO</string>
     <string name="login_social_sso">jednotné prihlásenie SSO</string>
     <string name="a11y_close_keys_backup_banner">Zatvoriť výzvu na zálohovanie kľúčov</string>
-    <string name="a11y_poll_winner_option">Výťazná odpoveď</string>
     <string name="a11y_unchecked">Nezaškrtnuté</string>
     <string name="a11y_checked">Zaškrtnuté</string>
     <string name="a11y_unsent_draft">Rozpísaná správa</string>
@@ -2653,7 +2650,7 @@
     <string name="device_manager_sessions_other_description">V záujme čo najlepšieho zabezpečenia, overte svoje relácie a odhláste sa z každej relácie, ktorú už nepoznáte alebo nepoužívate.</string>
     <string name="device_manager_sessions_other_title">Iné relácie</string>
     <string name="settings_sessions_list">Relácie</string>
-    <string name="a11y_open_spaces">Otvoriť zoznam priestorov</string>
+    <string name="a11y_open_spaces">Zoznam priestorov</string>
     <string name="a11y_create_message">Vytvoriť novú konverzáciu alebo miestnosť</string>
     <string name="room_list_filter_people">Ľudia</string>
     <string name="room_list_filter_favourites">Obľúbené</string>
@@ -2692,7 +2689,7 @@
     <string name="home_empty_no_unreads_message">Tu sa zobrazia neprečítané správy, ak nejaké máte.</string>
     <string name="home_empty_no_unreads_title">Nič, o čom by bolo potrebné podať správu.</string>
     <string name="home_empty_no_rooms_message">Kompletná zabezpečená aplikácia na komunikáciu pre tímy, priateľov a organizácie. Začnite konverzáciu alebo sa pridajte k existujúcej miestnosti.</string>
-    <string name="home_empty_no_rooms_title">Vitajte v aplikácii ${názov_aplikácie},
+    <string name="home_empty_no_rooms_title">Vitajte v aplikácii ${app_name},
 \n%s.</string>
     <string name="home_empty_space_no_rooms_message">Priestory sú novým spôsobom zoskupovania miestností a ľudí. Pomocou tlačidla vpravo dole môžete pridať existujúcu miestnosť alebo vytvoriť novú.</string>
     <string name="home_empty_space_no_rooms_title">%s
@@ -2765,11 +2762,8 @@
     <string name="labs_enable_new_app_layout_title">Zapnúť nové usporiadanie</string>
     <string name="device_manager_learn_more_session_rename">Ostatní používatelia v priamych správach a miestnostiach, do ktorých sa pripojíte, si môžu pozrieť úplný zoznam vašich relácií.
 \n
-\nTo im poskytuje istotu, že sa s vami naozaj rozprávajú, ale zároveň to znamená, že vidia názov relácie, ktorý sem zadáte.</string>
+\nTo im poskytuje istotu, že sa komunikujú naozaj s vami, ale zároveň to znamená, že vidia názov relácie, ktorý sem zadáte.</string>
     <string name="device_manager_learn_more_session_rename_title">Premenovanie relácií</string>
-    <string name="device_manager_learn_more_sessions_verified">Overené relácie, do ktorých ste sa prihlásili pomocou svojich prihlasovacích údajov a ktoré boli následne overené buď pomocou vašej bezpečnostnej prístupovej frázy, alebo krížovým overením.
-\n
-\nTo znamená, že majú šifrovacie kľúče pre vaše predchádzajúce správy a potvrdzujú ostatným používateľom, s ktorými komunikujete, že tieto relácie ste skutočne vy.</string>
     <string name="device_manager_learn_more_sessions_verified_title">Overené relácie</string>
     <string name="device_manager_learn_more_sessions_unverified">Neoverené relácie sú relácie, do ktorých ste sa prihlásili pomocou svojich prístupových údajov, ale ktoré neboli krížovo overené.
 \n
@@ -2839,9 +2833,9 @@
     <string name="qr_code_login_link_a_device_show_qr_code_instruction_1">Začnite na prihlasovacej obrazovke</string>
     <string name="qr_code_login_link_a_device_scan_qr_code_instruction_2">Vyberte možnosť \"Prihlásiť sa pomocou QR kódu\"</string>
     <string name="qr_code_login_link_a_device_scan_qr_code_instruction_1">Začnite na prihlasovacej obrazovke</string>
-    <string name="qr_code_login_new_device_instruction_3">Vyberte možnosť \"Zobraziť QR kód na tomto zariadení\"</string>
-    <string name="qr_code_login_new_device_instruction_2">Prejdite do Nastavenia -&gt; Zabezpečenie a súkromie -&gt; Zobraziť všetky relácie</string>
-    <string name="qr_code_login_new_device_instruction_1">Otvorte ${app_name} na vašom druhom zariadení</string>
+    <string name="qr_code_login_new_device_instruction_3">Vyberte možnosť \"Zobraziť QR kód\"</string>
+    <string name="qr_code_login_new_device_instruction_2">Prejdite do Nastavenia -&gt; Zabezpečenie a súkromie</string>
+    <string name="qr_code_login_new_device_instruction_1">Otvorte aplikáciu na vašom druhom zariadení</string>
     <string name="qr_code_login_header_failed_denied_description">Žiadosť bola na druhom zariadení zamietnutá.</string>
     <string name="qr_code_login_header_failed_timeout_description">Prepojenie nebolo dokončené v požadovanom čase.</string>
     <string name="qr_code_login_header_failed_device_is_not_supported_description">Prepojenie s týmto zariadením nie je podporované.</string>
@@ -2859,4 +2853,169 @@
     <string name="device_manager_sessions_sign_in_with_qr_code_description">Pomocou tohto zariadenia sa môžete prihlásiť do mobilného alebo webového zariadenia pomocou QR kódu. Môžete to urobiť dvoma spôsobmi:</string>
     <string name="device_manager_sessions_sign_in_with_qr_code_title">Prihlásiť sa pomocou QR kódu</string>
     <string name="login_scan_qr_code">Skenovať QR kód</string>
+    <string name="qr_code_login_header_failed_homeserver_is_not_supported_description">Domovský server nepodporuje prihlásenie pomocou QR kódu.</string>
+    <string name="qr_code_login_header_failed_user_cancelled_description">Prihlasovanie bolo zrušené na druhom zariadení.</string>
+    <string name="qr_code_login_header_failed_invalid_qr_code_description">QR kód nie je platný.</string>
+    <string name="qr_code_login_header_failed_other_device_not_signed_in_description">Druhé zariadenie musí byť prihlásené.</string>
+    <string name="qr_code_login_header_failed_other_device_already_signed_in_description">Druhé zariadenie je už prihlásené.</string>
+    <string name="qr_code_login_header_failed_e2ee_security_issue_description">Pri nastavovaní zabezpečeného zasielania správ sa vyskytol bezpečnostný problém. Jedna z nasledujúcich možností môže byť kompromitovaná: Váš domovský server; Vaše internetové pripojenie (pripojenia); Vaše zariadenie (zariadenia);</string>
+    <string name="qr_code_login_header_failed_other_description">Žiadosť zlyhala.</string>
+    <string name="labs_enable_voice_broadcast_summary">Možnosť nahrávania a odosielania hlasového vysielania v časovej osi miestnosti.</string>
+    <string name="labs_enable_voice_broadcast_title">Zapnúť hlasové vysielanie</string>
+    <string name="voice_broadcast_buffering">Načítavanie do vyrovnávacej pamäte…</string>
+    <string name="a11y_pause_voice_broadcast">Pozastaviť hlasové vysielanie</string>
+    <string name="a11y_play_voice_broadcast">Prehrať alebo pokračovať v nahrávaní hlasového vysielania</string>
+    <string name="a11y_stop_voice_broadcast_record">Zastaviť nahrávanie hlasového vysielania</string>
+    <string name="a11y_pause_voice_broadcast_record">Pozastaviť nahrávanie hlasového vysielania</string>
+    <string name="a11y_resume_voice_broadcast_record">Pokračovať v nahrávaní hlasového vysielania</string>
+    <string name="voice_broadcast_live">Naživo</string>
+    <string name="device_manager_other_sessions_select">Vyberte relácie</string>
+    <string name="attachment_type_selector_contact">Kontakt</string>
+    <string name="attachment_type_selector_camera">Kamera</string>
+    <string name="attachment_type_selector_location">Poloha</string>
+    <string name="attachment_type_selector_poll">Ankety</string>
+    <string name="attachment_type_selector_voice_broadcast">Hlasové vysielanie</string>
+    <string name="attachment_type_selector_file">Prílohy</string>
+    <string name="attachment_type_selector_sticker">Nálepky</string>
+    <string name="attachment_type_selector_gallery">Knižnica fotografií</string>
+    <string name="action_deselect_all">Zrušiť výber všetkých</string>
+    <string name="action_select_all">Vybrať všetko</string>
+    <plurals name="x_selected">
+        <item quantity="one">%1$d vybraté</item>
+        <item quantity="few">%1$d vybraté</item>
+        <item quantity="other">%1$d vybraných</item>
+    </plurals>
+    <string name="rich_text_editor_full_screen_toggle">Prepnutie režimu na celú obrazovku</string>
+    <string name="attachment_type_selector_text_formatting">Formátovanie textu</string>
+    <string name="error_voice_broadcast_already_in_progress_message">Už nahrávate hlasové vysielanie. Ukončite aktuálne hlasové vysielanie a spustite nové.</string>
+    <string name="error_voice_broadcast_blocked_by_someone_else_message">Niekto iný už nahráva hlasové vysielanie. Počkajte, kým sa skončí jeho hlasové vysielanie, a potom spustite nové.</string>
+    <string name="error_voice_broadcast_permission_denied_message">Nemáte požadované oprávnenia na spustenie hlasového vysielania v tejto miestnosti. Obráťte sa na správcu miestnosti, aby vám rozšíril oprávnenia.</string>
+    <string name="error_voice_broadcast_unauthorized_title">Nie je možné spustiť nové hlasové vysielanie</string>
+    <string name="a11y_voice_broadcast_fast_backward">Rýchle posunutie dozadu o 30 sekúnd</string>
+    <string name="a11y_voice_broadcast_fast_forward">Rýchle posunutie dopredu o 30 sekúnd</string>
+    <string name="device_manager_learn_more_sessions_verified_description">Overené relácie sú všade tam, kde používate toto konto po zadaní svojho prístupového hesla alebo po potvrdení svojej totožnosti inou overenou reláciou.
+\n
+\nTo znamená, že máte všetky kľúče potrebné na odomknutie zašifrovaných správ a potvrdenie pre ostatných používateľov, že tejto relácii dôverujete.</string>
+    <plurals name="device_manager_other_sessions_multi_signout_all">
+        <item quantity="one">Odhlásiť sa z %1$d relácie</item>
+        <item quantity="few">Odhlásiť sa z %1$d relácií</item>
+        <item quantity="other">Odhlásiť sa z %1$d relácií</item>
+    </plurals>
+    <string name="device_manager_other_sessions_multi_signout_selection">Odhlásiť sa</string>
+    <string name="voice_broadcast_recording_time_left">Ostáva %1$s</string>
+    <string name="quoting">Cituje</string>
+    <string name="message_reply_to_sender_created_poll">vytvoril/a anketu.</string>
+    <string name="message_reply_to_sender_sent_sticker">poslal/a nálepku.</string>
+    <string name="message_reply_to_sender_sent_video">poslal/a video.</string>
+    <string name="message_reply_to_sender_sent_image">poslal/a obrázok.</string>
+    <string name="message_reply_to_sender_sent_voice_message">poslal/a zvukovú správu.</string>
+    <string name="message_reply_to_sender_sent_audio_file">poslal/a zvukový súbor.</string>
+    <string name="message_reply_to_sender_sent_file">poslal súbor.</string>
+    <string name="message_reply_to_prefix">V odpovedi na</string>
+    <string name="device_manager_other_sessions_hide_ip_address">Skryť IP adresu</string>
+    <string name="device_manager_other_sessions_show_ip_address">Zobraziť IP adresu</string>
+    <string name="replying_to">Odpoveď na %s</string>
+    <string name="editing">Úprava</string>
+    <string name="settings_enable_direct_share_summary">Zobraziť posledné konverzácie v systémovej ponuke zdieľania</string>
+    <string name="settings_enable_direct_share_title">Povoliť priame zdieľanie</string>
+    <string name="review_unverified_sessions_description">Skontrolujte, či je vaše konto bezpečné</string>
+    <string name="review_unverified_sessions_title">Máte neoverené relácie</string>
+    <string name="device_manager_learn_more_sessions_encryption_not_supported">Táto relácia nepodporuje šifrovanie, takže ju nemožno overiť.
+\n
+\nPri používaní tejto relácie sa nebudete môcť zúčastňovať konverzácií v miestnostiach, kde je zapnuté šifrovanie.
+\n
+\nNa dosiahnutie čo najlepšieho zabezpečenia a súkromia sa odporúča používať Matrix klientov, ktoré podporujú šifrovanie.</string>
+    <string name="device_manager_signout_all_other_sessions">Odhlásiť zo všetkých ostatných relácií</string>
+    <string name="device_manager_verification_status_detail_session_encryption_not_supported">Táto relácia nepodporuje šifrovanie, a preto ju nemožno overiť.</string>
+    <string name="settings_nightly_build_update">Získajte najnovšiu zostavu (poznámka: môžete mať problémy s prihlásením)</string>
+    <string name="settings_nightly_build">Nočná zostava</string>
+    <string name="voice_broadcast_live_broadcast">Živé vysielanie</string>
+    <string name="notice_voice_broadcast_ended_by_you">Ukončili ste hlasové vysielanie.</string>
+    <string name="notice_voice_broadcast_ended">%1$s ukončil/a hlasové vysielanie.</string>
+    <string name="stop_voice_broadcast_content">Určite chcete zastaviť vysielanie naživo\? Tým sa vysielanie ukončí a v miestnosti bude k dispozícii celý záznam.</string>
+    <string name="stop_voice_broadcast_dialog_title">Zastaviť vysielanie naživo\?</string>
+    <string name="action_stop">Áno, zastaviť</string>
+    <string name="set_link_edit">Upraviť odkaz</string>
+    <string name="set_link_create">Vytvoriť odkaz</string>
+    <string name="set_link_link">Odkaz</string>
+    <string name="set_link_text">Text</string>
+    <string name="rich_text_editor_link">Nastaviť odkaz</string>
+    <string name="settings_access_token_summary">Váš prístupový token poskytuje úplný prístup k vášmu účtu. S nikým ho nezdieľajte.</string>
+    <string name="settings_access_token">Prístupový token</string>
+    <string name="rich_text_editor_numbered_list">Prepnúť na číslovaný zoznam</string>
+    <string name="rich_text_editor_bullet_list">Prepnúť zoznam s odrážkami</string>
+    <string name="room_polls_ended_no_item">V tejto miestnosti nie sú žiadne predchádzajúce ankety</string>
+    <string name="room_polls_ended">Predchádzajúce ankety</string>
+    <string name="room_polls_active_no_item">V tejto miestnosti nie sú žiadne aktívne ankety</string>
+    <string name="room_polls_active">Aktívne ankety</string>
+    <string name="room_profile_section_more_polls">História ankety</string>
+    <string name="message_reply_to_ended_poll_preview">Ukončená anketa</string>
+    <string name="message_reply_to_poll_preview">Anketa</string>
+    <string name="message_reply_to_sender_ended_poll">ukončil/a anketu.</string>
+    <string name="ended_poll_indicator">Ukončil/a anketu.</string>
+    <string name="thread_list_not_available">Váš domovský server zatiaľ nepodporuje zobrazovanie vlákien.</string>
+    <string name="error_voice_broadcast_unable_to_play">Toto hlasové vysielanie nie je možné prehrať.</string>
+    <string name="started_a_voice_broadcast">Spustil/a hlasové vysielanie</string>
+    <string name="unable_to_decrypt_some_events_in_poll">Z dôvodu chýb v dešifrovaní sa niektoré hlasy nemusia započítať</string>
+    <string name="room_polls_loading_error">Chyba pri načítavaní ankiet.</string>
+    <string name="room_polls_load_more">Načítať ďalšie ankety</string>
+    <string name="room_polls_wait_for_display">Zobrazenie ankiet</string>
+    <plurals name="room_polls_ended_no_item_for_loaded_period">
+        <item quantity="one">Za uplynulý deň nie sú k dispozícii žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+        <item quantity="few">Za posledné %1$d dni nie sú aktívne žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+        <item quantity="other">Za posledných %1$d dní nie sú aktívne žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+    </plurals>
+    <plurals name="room_polls_active_no_item_for_loaded_period">
+        <item quantity="one">Za posledný deň nie sú aktívne žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+        <item quantity="few">Za posledných %1$d dni nie sú aktívne žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+        <item quantity="other">Za posledných %1$d dní nie sú aktívne žiadne ankety.
+\nNačítaním ďalších ankiet zobrazíte ankety za predchádzajúce dni.</item>
+    </plurals>
+    <string name="error_voice_message_broadcast_in_progress_message">Nemôžete spustiť hlasovú správu, pretože práve nahrávate živé vysielanie. Ukončite prosím živé vysielanie, aby ste mohli začať nahrávať hlasovú správu</string>
+    <string name="error_voice_message_broadcast_in_progress">Nemožno spustiť hlasovú správu</string>
+    <string name="error_voice_broadcast_no_connection_recording">Chyba pripojenia - nahrávanie pozastavené</string>
+    <string name="rich_text_editor_inline_code">Použiť formát riadkového kódu</string>
+    <string name="rich_text_editor_code_block">Prepnutie bloku kódu</string>
+    <string name="rich_text_editor_quote">Prepínanie citácie</string>
+    <string name="rich_text_editor_unindent">Zrušiť odsadenie</string>
+    <string name="rich_text_editor_indent">Odsadenie</string>
+    <string name="room_poll_details_go_to_timeline">Zobraziť anketu na časovej osi</string>
+    <string name="error_voice_broadcast_unable_to_decrypt">Toto hlasové vysielanie sa nedá dešifrovať.</string>
+    <string name="settings_external_account_management">Údaje o vašom účte sú spravované samostatne na %1$s.</string>
+    <string name="settings_external_account_management_title">Účet</string>
+    <string name="settings_notification_error_on_update">Pri aktualizácii vašich predvolieb oznámení došlo k chybe. Skúste prosím znova.</string>
+    <string name="direct_room_encryption_enabled_waiting_users_tile_description">Keď sa pozvaní používatelia pripoja k aplikácii ${app_name}, budete môcť konverzovať a miestnosť bude end-to-end šifrovaná</string>
+    <string name="direct_room_encryption_enabled_waiting_users">Čaká sa na pripojenie používateľov k aplikácii ${app_name}</string>
+    <string name="direct_room_user_list_only_invite_one_email">Naraz môžete pozvať len jeden e-mail</string>
+    <string name="pill_message_unknown_room_or_space">Miestnosť/Priestor</string>
+    <string name="pill_message_in_unknown_room">Správa v miestnosti</string>
+    <string name="pill_message_in_room">Správa v %s</string>
+    <string name="pill_message_from_unknown_user">Správa</string>
+    <string name="pill_message_from_user">Správa od %s</string>
+    <string name="encrypted_by_deleted">Šifrované odstráneným zariadením</string>
+    <string name="secure_backup_reset_danger_warning">Pokračujte prosím iba vtedy, ak ste si istí, že ste stratili všetky ostatné zariadenia a váš bezpečnostný kľúč.</string>
+    <string name="secure_backup_reset_all_no_other_devices_long">Vynulovanie overovacích kľúčov sa nedá vrátiť späť. Po vynulovaní nebudete mať prístup k starým zašifrovaným správam a všetci priatelia, ktorí vás predtým overili, uvidia bezpečnostné upozornenia, kým sa u nich znovu neoveríte.</string>
+    <string name="verification_not_found">Žiadosť o overenie nebola nájdená. Mohla byť zrušená alebo spracovaná inou reláciou.</string>
+    <string name="_resume">Pokračovať</string>
+    <string name="verification_request_was_sent">Žiadosť o overenie bola odoslaná. Otvorte jednu z vašich iných relácií, aby ste ju prijali a spustili overovanie.</string>
+    <string name="verification_verify_identity">Overte svoju totožnosť, aby ste mali prístup k zašifrovaným správam a potvrdili svoju totožnosť ostatným.</string>
+    <string name="verification_verify_with_another_device">Overiť pomocou iného zariadenia</string>
+    <string name="verification_request_waiting_for_recovery">Overovanie z bezpečnostného kľúča alebo frázy…</string>
+    <string name="settings_acceptable_use_policy">Zásady prijateľného používania</string>
+    <string name="action_proceed_to_reset">Pokračovať v obnovení</string>
+    <string name="settings_crypto_version">Krypto verzia</string>
+    <string name="notice_display_name_changed_to">%1$s zmenil/a svoje zobrazované meno na %2$s</string>
+    <string name="avatar_of_user">Profilový obrázok používateľa %1$s</string>
+    <string name="avatar_of_room">Obrázok miestnosti %1$s</string>
+    <string name="avatar_of_space">Obrázok priestoru %1$s</string>
+    <string name="confirm_your_identity_after_update">Najnovšou aktualizáciou sa zlepšilo bezpečné zasielanie správ. Overte prosím znova svoje zariadenie.</string>
+    <string name="verification_profile_other_device_untrust_info">Pokiaľ tento používateľ tejto relácii nedôveruje, správy odoslané do nej a z nej sú označené varovaním.</string>
+    <string name="crosssigning_verify_after_update">Aplikácia bola aktualizovaná</string>
+    <string name="sign_out_anyway">Aj tak sa odhlásiť</string>
+    <string name="sign_out_failed_dialog_message">Nie je možné sa spojiť s domovským serverom. Ak sa aj tak odhlásite, toto zariadenie nebude vymazané zo zoznamu zariadení, môžete ho odstrániť pomocou iného klienta.</string>
 </resources>

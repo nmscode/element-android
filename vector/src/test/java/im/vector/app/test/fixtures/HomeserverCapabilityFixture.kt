@@ -27,14 +27,18 @@ fun aHomeServerCapabilities(
         maxUploadFileSize: Long = 100L,
         lastVersionIdentityServerSupported: Boolean = false,
         defaultIdentityServerUrl: String? = null,
-        roomVersions: RoomVersionCapabilities? = null
+        roomVersions: RoomVersionCapabilities? = null,
+        canRemotelyTogglePushNotificationsOfDevices: Boolean = true,
+        externalAccountManagementUrl: String? = null,
 ) = HomeServerCapabilities(
-        canChangePassword,
-        canChangeDisplayName,
-        canChangeAvatar,
-        canChange3pid,
-        maxUploadFileSize,
-        lastVersionIdentityServerSupported,
-        defaultIdentityServerUrl,
-        roomVersions
+        canChangePassword = canChangePassword,
+        canChangeDisplayName = canChangeDisplayName,
+        canChangeAvatar = canChangeAvatar,
+        canChange3pid = canChange3pid,
+        maxUploadFileSize = maxUploadFileSize,
+        lastVersionIdentityServerSupported = lastVersionIdentityServerSupported,
+        defaultIdentityServerUrl = defaultIdentityServerUrl,
+        roomVersions = roomVersions,
+        canRemotelyTogglePushNotificationsOfDevices = canRemotelyTogglePushNotificationsOfDevices,
+        externalAccountManagementUrl = externalAccountManagementUrl,
 )

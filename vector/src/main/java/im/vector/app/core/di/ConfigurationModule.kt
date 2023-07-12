@@ -38,9 +38,21 @@ object ConfigurationModule {
     @Provides
     fun providesAnalyticsConfig(): AnalyticsConfig {
         val config: Analytics = when (BuildConfig.BUILD_TYPE) {
-            "debug" -> Config.DEBUG_ANALYTICS_CONFIG
-            "nightly" -> Config.NIGHTLY_ANALYTICS_CONFIG
-            "release" -> Config.RELEASE_ANALYTICS_CONFIG
+            "debug" -> if (BuildConfig.FLAVOR == "rustCrypto") {
+                Config.ER_DEBUG_ANALYTICS_CONFIG
+            } else {
+                Config.DEBUG_ANALYTICS_CONFIG
+            }
+            "nightly" -> if (BuildConfig.FLAVOR == "rustCrypto") {
+                Config.ER_NIGHTLY_ANALYTICS_CONFIG
+            } else {
+                Config.NIGHTLY_ANALYTICS_CONFIG
+            }
+            "release" -> if (BuildConfig.FLAVOR == "rustCrypto") {
+                Config.RELEASE_R_ANALYTICS_CONFIG
+            } else {
+                Config.RELEASE_ANALYTICS_CONFIG
+            }
             else -> throw IllegalStateException("Unhandled build type: ${BuildConfig.BUILD_TYPE}")
         }
         return when (config) {
@@ -65,8 +77,8 @@ object ConfigurationModule {
     fun providesCryptoConfig() = CryptoConfig(
             fallbackKeySharingStrategy = when (Config.KEY_SHARING_STRATEGY) {
                 KeySharingStrategy.WhenSendingEvent -> OutboundSessionKeySharingStrategy.WhenSendingEvent
-                KeySharingStrategy.WhenEnteringRoom -> OutboundSessionKeySharingStrategy.WhenSendingEvent
-                KeySharingStrategy.WhenTyping -> OutboundSessionKeySharingStrategy.WhenSendingEvent
+                KeySharingStrategy.WhenEnteringRoom -> OutboundSessionKeySharingStrategy.WhenEnteringRoom
+                KeySharingStrategy.WhenTyping -> OutboundSessionKeySharingStrategy.WhenTyping
             }
     )
 

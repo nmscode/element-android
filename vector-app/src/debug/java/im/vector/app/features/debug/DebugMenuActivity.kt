@@ -28,18 +28,19 @@ import dagger.hilt.android.AndroidEntryPoint
 import im.vector.app.R
 import im.vector.app.core.extensions.registerStartForActivityResult
 import im.vector.app.core.platform.VectorBaseActivity
-import im.vector.app.core.time.Clock
 import im.vector.app.core.utils.PERMISSIONS_FOR_TAKING_PHOTO
 import im.vector.app.core.utils.checkPermissions
 import im.vector.app.core.utils.registerForPermissionsResult
 import im.vector.app.core.utils.toast
 import im.vector.app.features.debug.analytics.DebugAnalyticsActivity
 import im.vector.app.features.debug.features.DebugFeaturesSettingsActivity
+import im.vector.app.features.debug.jitsi.DebugJitsiActivity
 import im.vector.app.features.debug.leak.DebugMemoryLeaksActivity
 import im.vector.app.features.debug.sas.DebugSasEmojiActivity
 import im.vector.app.features.debug.settings.DebugPrivateSettingsActivity
 import im.vector.app.features.qrcode.QrCodeScannerActivity
 import im.vector.application.databinding.ActivityDebugMenuBinding
+import im.vector.lib.core.utils.timer.Clock
 import im.vector.lib.ui.styles.debug.DebugMaterialThemeDarkDefaultActivity
 import im.vector.lib.ui.styles.debug.DebugMaterialThemeDarkTestActivity
 import im.vector.lib.ui.styles.debug.DebugMaterialThemeDarkVectorActivity
@@ -121,6 +122,9 @@ class DebugMenuActivity : VectorBaseActivity<ActivityDebugMenuBinding>() {
         views.debugPermission.setOnClickListener {
             startActivity(Intent(this, DebugPermissionActivity::class.java))
         }
+        views.debugJitsi.setOnClickListener {
+            startActivity(Intent(this, DebugJitsiActivity::class.java))
+        }
     }
 
     private fun openPrivateSettings() {
@@ -175,7 +179,7 @@ class DebugMenuActivity : VectorBaseActivity<ActivityDebugMenuBinding>() {
                 .setContentText("Content")
                 // No effect because it's a group summary notif
                 .setNumber(33)
-                .setSmallIcon(R.drawable.ic_status_bar)
+                .setSmallIcon(R.drawable.ic_notification)
                 // This provocate the badge issue: no badge for group notification
                 .setGroup("GroupKey")
                 .setGroupSummary(true)
@@ -208,7 +212,7 @@ class DebugMenuActivity : VectorBaseActivity<ActivityDebugMenuBinding>() {
                         // For shortcut on long press on launcher icon
                         .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                         .setStyle(messagingStyle1)
-                        .setSmallIcon(R.drawable.ic_status_bar)
+                        .setSmallIcon(R.drawable.ic_notification)
                         .setGroup("GroupKey")
                         .build()
         )
@@ -220,7 +224,7 @@ class DebugMenuActivity : VectorBaseActivity<ActivityDebugMenuBinding>() {
                         .setContentTitle("Title 2")
                         .setContentText("Content 2")
                         .setStyle(messagingStyle2)
-                        .setSmallIcon(R.drawable.ic_status_bar)
+                        .setSmallIcon(R.drawable.ic_notification)
                         .setGroup("GroupKey")
                         .build()
         )

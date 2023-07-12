@@ -15,7 +15,6 @@
  */
 package im.vector.app.push.fcm
 
-import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.widget.Toast
@@ -23,11 +22,15 @@ import androidx.core.content.edit
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.messaging.FirebaseMessaging
+import dagger.hilt.android.qualifiers.ApplicationContext
 import im.vector.app.R
 import im.vector.app.core.di.ActiveSessionHolder
 import im.vector.app.core.di.DefaultPreferences
+import im.vector.app.core.dispatchers.CoroutineDispatchers
 import im.vector.app.core.pushers.FcmHelper
 import im.vector.app.core.pushers.PushersManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -36,9 +39,14 @@ import javax.inject.Inject
  * It has an alter ego in the fdroid variant.
  */
 class GoogleFcmHelper @Inject constructor(
-        @DefaultPreferences
-        private val sharedPrefs: SharedPreferences,
+        @ApplicationContext private val context: Context,
+        @DefaultPreferences private val sharedPrefs: SharedPreferences,
+        appScope: CoroutineScope,
+        private val coroutineDispatchers: CoroutineDispatchers
 ) : FcmHelper {
+
+    private val scope = CoroutineScope(appScope.coroutineContext + coroutineDispatchers.io)
+
     companion object {
         private const val PREFS_KEY_FCM_TOKEN = "FCM_TOKEN"
     }
@@ -56,16 +64,17 @@ class GoogleFcmHelper @Inject constructor(
         }
     }
 
-    override fun ensureFcmTokenIsRetrieved(activity: Activity, pushersManager: PushersManager, registerPusher: Boolean) {
-        //        if (TextUtils.isEmpty(getFcmToken(activity))) {
+    override fun ensureFcmTokenIsRetrieved(pushersManager: PushersManager, registerPusher: Boolean) {
         // 'app should always check the device for a compatible Google Play services APK before accessing Google Play services features'
-        if (checkPlayServices(activity)) {
+        if (checkPlayServices(context)) {
             try {
                 FirebaseMessaging.getInstance().token
                         .addOnSuccessListener { token ->
                             storeFcmToken(token)
                             if (registerPusher) {
-                                pushersManager.enqueueRegisterPusherWithFcmKey(token)
+                                scope.launch {
+                                    pushersManager.enqueueRegisterPusherWithFcmKey(token)
+                                }
                             }
                         }
                         .addOnFailureListener { e ->
@@ -75,7 +84,7 @@ class GoogleFcmHelper @Inject constructor(
                 Timber.e(e, "## ensureFcmTokenIsRetrieved() : failed")
             }
         } else {
-            Toast.makeText(activity, R.string.no_valid_google_play_services_apk, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.no_valid_google_play_services_apk, Toast.LENGTH_SHORT).show()
             Timber.e("No valid Google Play Services found. Cannot use FCM.")
         }
     }

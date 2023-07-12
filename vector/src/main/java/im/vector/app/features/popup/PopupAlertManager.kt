@@ -21,10 +21,12 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+import androidx.core.view.ViewCompat
 import com.tapadoo.alerter.Alerter
 import im.vector.app.R
+import im.vector.app.core.extensions.giveAccessibilityFocus
 import im.vector.app.core.platform.VectorBaseActivity
-import im.vector.app.core.time.Clock
+import im.vector.app.core.resources.StringProvider
 import im.vector.app.core.utils.isAnimationEnabled
 import im.vector.app.features.MainActivity
 import im.vector.app.features.analytics.ui.consent.AnalyticsOptInActivity
@@ -32,6 +34,7 @@ import im.vector.app.features.home.room.list.home.release.ReleaseNotesActivity
 import im.vector.app.features.pin.PinActivity
 import im.vector.app.features.signout.hard.SignedOutActivity
 import im.vector.app.features.themes.ThemeUtils
+import im.vector.lib.core.utils.timer.Clock
 import timber.log.Timber
 import java.lang.ref.WeakReference
 import javax.inject.Inject
@@ -46,10 +49,17 @@ import javax.inject.Singleton
 @Singleton
 class PopupAlertManager @Inject constructor(
         private val clock: Clock,
+        private val stringProvider: StringProvider,
 ) {
 
     companion object {
         const val INCOMING_CALL_PRIORITY = Int.MAX_VALUE
+        const val INCOMING_VERIFICATION_REQUEST_PRIORITY = 1
+        const val DEFAULT_PRIORITY = 0
+        const val REVIEW_LOGIN_UID = "review_login"
+        const val UPGRADE_SECURITY_UID = "upgrade_security"
+        const val VERIFY_SESSION_UID = "verify_session"
+        const val ENABLE_PUSH_UID = "enable_push"
     }
 
     private var weakCurrentActivity: WeakReference<Activity>? = null
@@ -145,7 +155,7 @@ class PopupAlertManager @Inject constructor(
 
     private fun displayNextIfPossible() {
         val currentActivity = weakCurrentActivity?.get()
-        if (Alerter.isShowing || currentActivity == null || currentActivity.isDestroyed) {
+        if (currentActivity == null || currentActivity.isDestroyed) {
             // will retry later
             return
         }
@@ -154,7 +164,7 @@ class PopupAlertManager @Inject constructor(
             next = alertQueue.maxByOrNull { it.priority }
             // If next alert with highest priority is higher than the current one, we should display it
             // and add the current one to queue again.
-            if (next != null && next.priority > currentAlerter?.priority ?: Int.MIN_VALUE) {
+            if (next != null && next.priority > (currentAlerter?.priority ?: Int.MIN_VALUE)) {
                 alertQueue.remove(next)
                 currentAlerter?.also {
                     alertQueue.add(0, it)
@@ -276,6 +286,9 @@ class PopupAlertManager @Inject constructor(
                     }
                     currentIsDismissed()
                 }
+                .setOnShowListener {
+                    handleAccessibility(activity, animate)
+                }
                 .enableSwipeToDismiss()
                 .enableInfiniteDuration(true)
                 .apply {
@@ -289,6 +302,29 @@ class PopupAlertManager @Inject constructor(
                 }
                 .enableIconPulse(!noAnimation)
                 .show()
+    }
+
+    /* a11y */
+    private fun handleAccessibility(activity: Activity, giveFocus: Boolean) {
+        activity.window.decorView.findViewById<View>(R.id.llAlertBackground)?.let { alertView ->
+            alertView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+
+            // Add close action for a11y (same action than swipe). User can select the action by swiping on the screen vertically,
+            // and double tap to perform the action
+            ViewCompat.addAccessibilityAction(
+                    alertView,
+                    stringProvider.getString(R.string.action_close)
+            ) { _, _ ->
+                currentIsDismissed()
+                Alerter.hide()
+                true
+            }
+
+            // And give focus to the alert right now, only for first display, i.e. when there is an animation.
+            if (giveFocus) {
+                alertView.giveAccessibilityFocus()
+            }
+        }
     }
 
     private fun currentIsDismissed() {

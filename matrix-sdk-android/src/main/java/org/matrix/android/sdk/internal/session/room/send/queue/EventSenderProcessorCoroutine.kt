@@ -28,7 +28,7 @@ import org.matrix.android.sdk.api.failure.isLimitExceededError
 import org.matrix.android.sdk.api.session.Session
 import org.matrix.android.sdk.api.session.events.model.Event
 import org.matrix.android.sdk.api.util.Cancelable
-import org.matrix.android.sdk.internal.crypto.store.IMXCryptoStore
+import org.matrix.android.sdk.internal.crypto.store.IMXCommonCryptoStore
 import org.matrix.android.sdk.internal.session.SessionScope
 import org.matrix.android.sdk.internal.task.CoroutineSequencer
 import org.matrix.android.sdk.internal.task.SemaphoreCoroutineSequencer
@@ -54,7 +54,7 @@ private const val MAX_RETRY_COUNT = 3
  */
 @SessionScope
 internal class EventSenderProcessorCoroutine @Inject constructor(
-        private val cryptoStore: IMXCryptoStore,
+        private val cryptoStore: IMXCommonCryptoStore,
         private val sessionParams: SessionParams,
         private val queuedTaskFactory: QueuedTaskFactory,
         private val taskExecutor: TaskExecutor,
@@ -101,12 +101,18 @@ internal class EventSenderProcessorCoroutine @Inject constructor(
         return postTask(task)
     }
 
-    override fun postRedaction(redactionLocalEcho: Event, reason: String?): Cancelable {
-        return postRedaction(redactionLocalEcho.eventId!!, redactionLocalEcho.redacts!!, redactionLocalEcho.roomId!!, reason)
+    override fun postRedaction(redactionLocalEcho: Event, reason: String?, withRelTypes: List<String>?): Cancelable {
+        return postRedaction(redactionLocalEcho.eventId!!, redactionLocalEcho.redacts!!, redactionLocalEcho.roomId!!, reason, withRelTypes)
     }
 
-    override fun postRedaction(redactionLocalEchoId: String, eventToRedactId: String, roomId: String, reason: String?): Cancelable {
-        val task = queuedTaskFactory.createRedactTask(redactionLocalEchoId, eventToRedactId, roomId, reason)
+    override fun postRedaction(
+            redactionLocalEchoId: String,
+            eventToRedactId: String,
+            roomId: String,
+            reason: String?,
+            withRelTypes: List<String>?
+    ): Cancelable {
+        val task = queuedTaskFactory.createRedactTask(redactionLocalEchoId, eventToRedactId, roomId, reason, withRelTypes)
         return postTask(task)
     }
 

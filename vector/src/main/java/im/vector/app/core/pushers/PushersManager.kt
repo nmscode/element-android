@@ -49,11 +49,11 @@ class PushersManager @Inject constructor(
         )
     }
 
-    fun enqueueRegisterPusherWithFcmKey(pushKey: String): UUID {
+    suspend fun enqueueRegisterPusherWithFcmKey(pushKey: String): UUID {
         return enqueueRegisterPusher(pushKey, stringProvider.getString(R.string.pusher_http_url))
     }
 
-    fun enqueueRegisterPusher(
+    suspend fun enqueueRegisterPusher(
             pushKey: String,
             gateway: String
     ): UUID {
@@ -62,7 +62,7 @@ class PushersManager @Inject constructor(
         return currentSession.pushersService().enqueueAddHttpPusher(pusher)
     }
 
-    private fun createHttpPusher(
+    private suspend fun createHttpPusher(
             pushKey: String,
             gateway: String
     ) = HttpPusher(
@@ -74,7 +74,7 @@ class PushersManager @Inject constructor(
             deviceDisplayName = getDeviceInfoUseCase.execute().displayName().orEmpty(),
             url = gateway,
             enabled = true,
-            deviceId = activeSessionHolder.getActiveSession().sessionParams.deviceId ?: "MOBILE",
+            deviceId = activeSessionHolder.getActiveSession().sessionParams.deviceId,
             append = false,
             withEventIdOnly = true,
     )
@@ -87,7 +87,7 @@ class PushersManager @Inject constructor(
                 lang = localeProvider.current().language,
                 emailBranding = appName,
                 appDisplayName = appName,
-                deviceDisplayName = currentSession.sessionParams.deviceId ?: "MOBILE"
+                deviceDisplayName = currentSession.sessionParams.deviceId
         )
     }
 
@@ -95,12 +95,6 @@ class PushersManager @Inject constructor(
         val session = activeSessionHolder.getSafeActiveSession() ?: return null
         val deviceId = session.sessionParams.deviceId
         return session.pushersService().getPushers().firstOrNull { it.deviceId == deviceId }
-    }
-
-    suspend fun togglePusherForCurrentSession(enable: Boolean) {
-        val session = activeSessionHolder.getSafeActiveSession() ?: return
-        val pusher = getPusherForCurrentSession() ?: return
-        session.pushersService().togglePusher(pusher, enable)
     }
 
     suspend fun unregisterEmailPusher(email: String) {

@@ -47,6 +47,7 @@ import im.vector.app.features.location.live.duration.ChooseLiveDurationBottomShe
 import im.vector.app.features.location.live.tracking.LocationSharingAndroidService
 import im.vector.app.features.location.option.LocationSharingOption
 import im.vector.app.features.settings.VectorPreferences
+import kotlinx.coroutines.launch
 import org.matrix.android.sdk.api.util.MatrixItem
 import java.lang.ref.WeakReference
 import javax.inject.Inject
@@ -97,7 +98,7 @@ class LocationSharingFragment :
         }.also { views.mapView.addOnDidFailLoadingMapListener(it) }
         views.mapView.onCreate(savedInstanceState)
 
-        lifecycleScope.launchWhenCreated {
+        viewLifecycleOwner.lifecycleScope.launch {
             views.mapView.initialize(
                     url = urlMapProvider.getMapUrl(),
                     locationTargetChangeListener = this@LocationSharingFragment
@@ -176,14 +177,7 @@ class LocationSharingFragment :
     }
 
     private fun handleLocationNotAvailableError() {
-        MaterialAlertDialogBuilder(requireActivity())
-                .setTitle(R.string.location_not_available_dialog_title)
-                .setMessage(R.string.location_not_available_dialog_content)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    locationSharingNavigator.quit()
-                }
-                .setCancelable(false)
-                .show()
+        showUserLocationNotAvailableErrorDialog { locationSharingNavigator.quit() }
     }
 
     private fun handleLiveLocationSharingNotEnoughPermission() {

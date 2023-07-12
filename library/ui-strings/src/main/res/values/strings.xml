@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Cross feature -->
+    <plurals name="x_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+
+    <!-- Notice -->
     <string name="notice_room_invite_no_invitee">%s\'s invitation</string>
     <string name="notice_room_invite_no_invitee_by_you">Your invitation</string>
     <string name="notice_room_created">%1$s created the room</string>
@@ -32,7 +39,9 @@
     <string name="notice_avatar_url_changed_by_you">You changed your avatar</string>
     <string name="notice_display_name_set">%1$s set their display name to %2$s</string>
     <string name="notice_display_name_set_by_you">You set your display name to %1$s</string>
-    <string name="notice_display_name_changed_from">%1$s changed their display name from %2$s to %3$s</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="notice_display_name_changed_from">%1$s changed their display name from %2$s to %3$s</string>
+    <string name="notice_display_name_changed_to">%1$s changed their display name to %2$s</string>
     <string name="notice_display_name_changed_from_by_you">You changed your display name from %1$s to %2$s</string>
     <string name="notice_display_name_removed">%1$s removed their display name (it was %2$s)</string>
     <string name="notice_display_name_removed_by_you">You removed your display name (it was %1$s)</string>
@@ -126,6 +135,9 @@
 
     <string name="notice_crypto_unable_to_decrypt">** Unable to decrypt: %s **</string>
     <string name="notice_crypto_error_unknown_inbound_session_id">The sender\'s device has not sent us the keys for this message.</string>
+
+    <string name="notice_voice_broadcast_ended">%1$s ended a voice broadcast.</string>
+    <string name="notice_voice_broadcast_ended_by_you">You ended a voice broadcast.</string>
 
     <!-- Messages -->
 
@@ -316,6 +328,9 @@
     <string name="backup">Back up</string>
     <string name="sign_out_bottom_sheet_will_lose_secure_messages">You’ll lose access to your encrypted messages unless you back up your keys before signing out.</string>
 
+    <string name="sign_out_failed_dialog_message">Cannot reach the homeserver. If you sign out anyway, this device will not be erased from your device list, you may want to remove it using another client.</string>
+    <string name="sign_out_anyway">Sign out anyway</string>
+
     <!-- splash screen accessibility -->
     <string name="loading">Loading…</string>
 
@@ -403,10 +418,15 @@
     <string name="action_disconnect">Disconnect</string>
     <string name="action_play">Play</string>
     <string name="action_dismiss">Dismiss</string>
-    <string name="action_reset">Reset</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="action_reset">Reset</string>
+    <string name="action_proceed_to_reset">Proceed to reset</string>
     <string name="action_learn_more">Learn more</string>
     <string name="action_next">Next</string>
     <string name="action_got_it">Got it</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Deselect all</string>
+    <string name="action_stop">Yes, Stop</string>
 
     <string name="copied_to_clipboard">Copied to clipboard</string>
 
@@ -781,6 +801,7 @@
     <string name="thread_list_modal_my_threads_subtitle">Shows all threads you’ve participated in</string>
     <string name="thread_list_empty_title">Keep discussions organized with threads</string>
     <string name="thread_list_empty_subtitle">Threads help keep your conversations on-topic and easy to track.</string>
+    <string name="thread_list_not_available">Your homeserver does not support listing threads yet.</string>
     <!-- Parameter %s will be replaced by the value of string reply_in_thread -->
     <string name="thread_list_empty_notice">Tip: Long tap a message and use “%s”.</string>
     <string name="search_thread_from_a_thread">From a Thread</string>
@@ -847,6 +868,8 @@
     <string name="settings_notification_new_keyword">Add new keyword</string>
     <string name="settings_notification_keyword_contains_dot">Keywords cannot start with \'.\'</string>
     <string name="settings_notification_keyword_contains_invalid_character">Keywords cannot contain \'%s\'</string>
+
+    <string name="settings_notification_error_on_update">An error occurred when updating your notification preferences. Please try again.</string>
 
     <string name="settings_notification_troubleshoot">Troubleshoot Notifications</string>
     <string name="settings_troubleshoot_diagnostic">Troubleshooting diagnostics</string>
@@ -984,8 +1007,11 @@
     </plurals>
 
     <string name="settings_version">Version</string>
-    <string name="settings_olm_version">olm version</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="settings_olm_version">olm version</string>
+    <string name="settings_crypto_version">Crypto version</string>
     <string name="settings_app_term_conditions">Terms &amp; conditions</string>
+    <string name="settings_acceptable_use_policy">Acceptable Use Policy</string>
     <string name="settings_third_party_notices">Third party notices</string>
     <string name="settings_copyright">Copyright</string>
     <string name="settings_privacy_policy">Privacy policy</string>
@@ -1023,6 +1049,8 @@
     <string name="settings_chat_effects_description">Use /confetti command or send a message containing ❄️ or 🎉</string>
     <string name="settings_autoplay_animated_images_title">Autoplay animated images</string>
     <string name="settings_autoplay_animated_images_summary">Play animated images in the timeline as soon as they are visible</string>
+    <string name="settings_enable_direct_share_title">Enable direct share</string>
+    <string name="settings_enable_direct_share_summary">Show recent chats in the system share menu</string>
     <string name="settings_show_join_leave_messages">Show join and leave events</string>
     <string name="settings_show_join_leave_messages_summary">Invites, removes, and bans are unaffected.</string>
     <string name="settings_show_avatar_display_name_changes_messages">Show account events</string>
@@ -1046,6 +1074,9 @@
     <string name="settings_deactivate_my_account">Deactivate my account</string>
     <string name="settings_discovery_category">Discovery</string>
     <string name="settings_discovery_manage">Manage your discovery settings.</string>
+
+    <string name="settings_external_account_management_title">Account</string>
+    <string name="settings_external_account_management">Your account details are managed separately at %1$s.</string>
 
     <!-- analytics -->
     <string name="settings_analytics">Analytics</string>
@@ -1442,6 +1473,9 @@
     <string name="reason_colon">Reason: %1$s</string>
 
     <string name="avatar">Avatar</string>
+    <string name="avatar_of_space">Avatar of space %1$s</string>
+    <string name="avatar_of_room">Avatar of room %1$s</string>
+    <string name="avatar_of_user">Profile picture of user %1$s</string>
 
     <!-- Consent modal -->
     <string name="dialog_user_consent_content">To continue using the %1$s homeserver you must review and agree to the terms and conditions.</string>
@@ -1622,7 +1656,8 @@
     <string name="sas_got_it">Got it</string>
 
     <string name="sas_incoming_request_notif_title">Verification Request</string>
-    <string name="sas_incoming_request_notif_content">%s wants to verify your session</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="sas_incoming_request_notif_content">%s wants to verify your session</string>
 
     <!-- SAS Errors -->
     <string name="sas_error_unknown">Unknown Error</string>
@@ -1633,7 +1668,10 @@
     <string name="error_user_already_logged_in">It looks like you’re trying to connect to another homeserver. Do you want to sign out?</string>
 
     <string name="edit">Edit</string>
+    <string name="editing">Editing</string>
     <string name="reply">Reply</string>
+    <string name="replying_to">Replying to %s</string>
+    <string name="quoting">Quoting</string>
     <string name="reply_in_thread">Reply in thread</string>
     <string name="view_in_room">View In Room</string>
 
@@ -1670,7 +1708,7 @@
     <string name="create_new_room">Create New Room</string>
     <string name="create_new_space">Create New Space</string>
     <string name="error_no_network">No network. Please check your Internet connection.</string>
-    <string name="error_check_network">Something went wrong. Please check your network connection and try again.</string>
+    <string name="error_check_network" tools:ignore="UnusedResources">Something went wrong. Please check your network connection and try again.</string>
     <string name="change_room_directory_network">"Change network"</string>
     <string name="please_wait">"Please wait…"</string>
     <string name="updating_your_data">Updating your data…</string>
@@ -1691,6 +1729,8 @@
     <string name="create_room_public_title">"Public"</string>
     <string name="create_room_public_description">"Anyone will be able to join this room"</string>
     <string name="create_room_federation_error">"The room has been created, but some invitations have not been sent for the following reason:\n\n%s"</string>
+    <string name="create_room_unknown_users_dialog_content">Unable to find profiles for the Matrix IDs listed below. Would you like to start a chat anyway?\n\n%s</string>
+    <string name="create_room_unknown_users_dialog_submit">Start chat anyway</string>
 
     <string name="keys_backup_unable_to_get_trust_info">"An error occurred getting trust info"</string>
     <string name="keys_backup_unable_to_get_keys_backup_data">"An error occurred getting keys backup data"</string>
@@ -1793,6 +1833,7 @@
     <string name="add_by_qr_code">Add by QR code</string>
     <string name="qr_code">QR code</string>
     <string name="creating_direct_room">"Creating room…"</string>
+    <string name="direct_room_user_list_only_invite_one_email">You can only invite one email at a time</string>
     <string name="direct_room_user_list_known_title">Known Users</string>
     <string name="direct_room_user_list_suggestions_title">Suggestions</string>
 
@@ -1801,7 +1842,7 @@
     <!-- Terms -->
     <string name="terms_of_service">Terms of Service</string>
     <string name="terms_description_for_identity_server">Be discoverable by others</string>
-    <string name="terms_description_for_integration_manager">Use Bots, bridges, widgets and sticker packs</string>
+    <string name="terms_description_for_integration_manager">Use bots, bridges, widgets and sticker packs</string>
 
     <string name="identity_server">Identity server</string>
     <string name="disconnect_identity_server">Disconnect identity server</string>
@@ -2275,6 +2316,7 @@
     <string name="sent_verification_conclusion">Verification Conclusion</string>
     <string name="sent_location">Shared their location</string>
     <string name="sent_live_location">Shared their live location</string>
+    <string name="started_a_voice_broadcast">Started a voice broadcast</string>
 
     <string name="verification_request_waiting">Waiting…</string>
     <string name="verification_request_other_cancelled">%s canceled</string>
@@ -2296,8 +2338,10 @@
     <string name="verification_no_scan_emoji_title">Verify by comparing emojis</string>
 
     <string name="verification_verify_user">Verify %s</string>
-    <string name="verification_verified_user">Verified %s</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_verified_user">Verified %s</string>
     <string name="verification_request_waiting_for">Waiting for %s…</string>
+    <string name="verification_request_waiting_for_recovery">Verifying from Secure Key or Phrase…</string>
     <string name="room_profile_not_encrypted_subtitle">Messages in this room are not end-to-end encrypted.</string>
     <string name="direct_room_profile_not_encrypted_subtitle">Messages here are not end-to-end encrypted.</string>
     <string name="room_profile_encrypted_subtitle">Messages in this room are end-to-end encrypted.\n\nYour messages are secured with locks and only you and the recipient have the unique keys to unlock them.</string>
@@ -2316,6 +2360,7 @@
         <item quantity="one">"One person"</item>
         <item quantity="other">"%1$d people"</item>
     </plurals>
+    <string name="room_profile_section_more_polls">Poll history</string>
     <string name="room_profile_section_more_uploads">Uploads</string>
     <string name="room_profile_section_more_leave">Leave Room</string>
     <string name="direct_room_profile_section_more_leave">Leave</string>
@@ -2366,9 +2411,11 @@
     <string name="verification_request_start_notice">To be secure, do this in person or use another way to communicate.</string>
 
     <string name="verification_emoji_notice">Compare the unique emoji, ensuring they appear in the same order.</string>
-    <string name="verification_code_notice">Compare the code with the one displayed on the other user\'s screen.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_code_notice">Compare the code with the one displayed on the other user\'s screen.</string>
     <string name="verification_conclusion_ok_notice">Messages with this user are end-to-end encrypted and can\'t be read by third parties.</string>
-    <string name="verification_conclusion_ok_self_notice">Your new session is now verified. It has access to your encrypted messages, and other users will see it as trusted.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_conclusion_ok_self_notice">Your new session is now verified. It has access to your encrypted messages, and other users will see it as trusted.</string>
 
     <string name="encryption_information_cross_signing_state">Cross-Signing</string>
     <string name="encryption_information_dg_xsigning_complete">Cross-Signing is enabled\nPrivate Keys on device.</string>
@@ -2404,10 +2451,14 @@
     </plurals>
 
     <string name="crosssigning_verify_this_session">Verify this device</string>
+    <string name="crosssigning_verify_after_update">App updated</string>
     <string name="crosssigning_cannot_verify_this_session">Unable to verify this device</string>
     <string name="crosssigning_cannot_verify_this_session_desc">You won’t be able to access encrypted message history. Reset your Secure Message Backup and verification keys to start fresh.</string>
 
-    <string name="verification_open_other_to_verify">Use an existing session to verify this one, granting it access to encrypted messages.</string>
+    <string name="verification_verify_with_another_device">Verify with another device</string>
+    <string name="verification_verify_identity">Verify your identity to access encrypted messages and prove your identity to others.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_open_other_to_verify">Use an existing session to verify this one, granting it access to encrypted messages.</string>
 
     <string name="verification_profile_verify">Verify</string>
     <string name="verification_profile_verified">Verified</string>
@@ -2420,7 +2471,9 @@
 
     <string name="verification_profile_device_verified_because">This session is trusted for secure messaging because %1$s (%2$s) verified it:</string>
     <string name="verification_profile_device_new_signing">%1$s (%2$s) signed in using a new session:</string>
-    <string name="verification_profile_device_untrust_info">Until this user trusts this session, messages sent to and from it are labeled with warnings. Alternatively, you can manually verify it.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_profile_device_untrust_info">Until this user trusts this session, messages sent to and from it are labeled with warnings. Alternatively, you can manually verify it.</string>
+    <string name="verification_profile_other_device_untrust_info">Until this user trusts this session, messages sent to and from it are labeled with warnings.</string>
 
 
     <string name="initialize_cross_signing">Initialize CrossSigning</string>
@@ -2472,26 +2525,37 @@
     <string name="settings_key_requests">Key Requests</string>
     <string name="settings_export_trail">Export Audit</string>
 
+    <string name="settings_nightly_build">Nightly build</string>
+    <string name="settings_nightly_build_update">Get the latest build (note: you may have trouble to sign in)</string>
+
     <string name="e2e_use_keybackup">Unlock encrypted messages history</string>
 
     <string name="refresh">Refresh</string>
 
     <string name="new_session">New login. Was this you?</string>
     <string name="verify_new_session_notice">Use this session to verify your new one, granting it access to encrypted messages.</string>
+    <string name="verification_request_was_sent">A verification request has been sent. Open one of your other sessions to accept and start the verification.</string>
     <string name="verify_new_session_was_not_me">This wasn’t me</string>
-    <string name="verify_new_session_compromized">Your account may be compromised</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verify_new_session_compromized">Your account may be compromised</string>
+
+    <string name="_resume">Resume</string>
 
     <string name="verify_cancel_self_verification_from_untrusted">If you cancel, you won’t be able to read encrypted messages on this device, and other users won’t trust it</string>
     <string name="verify_cancel_self_verification_from_trusted">If you cancel, you won’t be able to read encrypted messages on your new device, and other users won’t trust it</string>
     <string name="verify_cancel_other">You won’t verify %1$s (%2$s) if you cancel now. Start again in their user profile.</string>
 
-    <string name="verify_not_me_self_verification">
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verify_not_me_self_verification">
         One of the following may be compromised:\n\n- Your password\n- Your homeserver\n- This device, or the other device\n- The internet connection either device is using\n\nWe recommend you change your password &amp; recovery key in Settings immediately.
     </string>
 
     <string name="verify_cancelled_notice">Verification has been canceled. You can start verification again.</string>
-    <string name="verify_invalid_qr_notice">This QR code looks malformed. Please try to verify with another method.</string>
-    <string name="verification_cancelled">Verification Canceled</string>
+    <string name="verification_not_found">The verification request was not found. It may have been cancelled, or handled by another session.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verify_invalid_qr_notice">This QR code looks malformed. Please try to verify with another method.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="verification_cancelled">Verification Canceled</string>
 
     <string name="recovery_passphrase">Recovery Passphrase</string>
     <string name="message_key">Message Key</string>
@@ -2532,6 +2596,8 @@
     <string name="encryption_enabled_tile_description">Messages in this room are end-to-end encrypted. Learn more &amp; verify users in their profile.</string>
     <string name="direct_room_encryption_enabled_tile_description">Messages in this chat are end-to-end encrypted.</string>
     <string name="direct_room_encryption_enabled_tile_description_future">Messages in this chat will be end-to-end encrypted.</string>
+    <string name="direct_room_encryption_enabled_waiting_users">Waiting for users to join ${app_name}</string>
+    <string name="direct_room_encryption_enabled_waiting_users_tile_description">Once invited users have joined ${app_name}, you will be able to chat and the room will be end-to-end encrypted</string>
     <string name="encryption_not_enabled">Encryption not enabled</string>
     <string name="encryption_misconfigured">Encryption is misconfigured</string>
     <string name="encryption_unknown_algorithm_tile_description">The encryption used by this room is not supported</string>
@@ -2617,8 +2683,12 @@
     <string name="bad_passphrase_key_reset_all_action">Forgot or lost all recovery options? Reset everything</string>
     <string name="secure_backup_reset_all">Reset everything</string>
     <string name="secure_backup_reset_all_no_other_devices">Only do this if you have no other device you can verify this device with.</string>
-    <string name="secure_backup_reset_if_you_reset_all">If you reset everything</string>
-    <string name="secure_backup_reset_no_history">You will restart with no history, no messages, trusted devices or trusted users</string>
+    <string name="secure_backup_reset_all_no_other_devices_long">Resetting your verification keys cannot be undone. After resetting, you won\'t have access to old encrypted messages, and any friends who have previously verified you will see security warnings until you re-verify with them.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="secure_backup_reset_if_you_reset_all">If you reset everything</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="secure_backup_reset_no_history">You will restart with no history, no messages, trusted devices or trusted users</string>
+    <string name="secure_backup_reset_danger_warning">Please only proceed if you\'re sure you\'ve lost all of your other devices and your security key.</string>
     <plurals name="secure_backup_reset_devices_you_can_verify">
         <item quantity="one">Show the device you can verify with now</item>
         <item quantity="other">Show %d devices you can verify with now</item>
@@ -2633,16 +2703,19 @@
 
     <string name="unencrypted">Unencrypted</string>
     <string name="encrypted_unverified">Encrypted by an unverified device</string>
+    <string name="encrypted_by_deleted">Encrypted by a deleted device</string>
     <string name="key_authenticity_not_guaranteed">The authenticity of this encrypted message can\'t be guaranteed on this device.</string>
-    <string name="review_logins">Review where you’re logged in</string>
-    <string name="verify_other_sessions">Verify all your sessions to ensure your account &amp; messages are safe</string>
+    <string name="review_unverified_sessions_title">You have unverified sessions</string>
+    <string name="review_unverified_sessions_description">Review to ensure your account is safe</string>
     <!-- Argument will be replaced by the other session name (e.g, Desktop, mobile) -->
     <string name="verify_this_session">Verify the new login accessing your account: %1$s</string>
 
     <string name="cross_signing_verify_by_text">Manually Verify by Text</string>
-    <string name="crosssigning_verify_session">Verify login</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="crosssigning_verify_session">Verify login</string>
     <string name="cross_signing_verify_by_emoji">Interactively Verify by Emoji</string>
     <string name="confirm_your_identity">Confirm your identity by verifying this login from one of your other sessions, granting it access to encrypted messages.</string>
+    <string name="confirm_your_identity_after_update">Secure messaging has been improved with the latest update. Please re-verify your device.</string>
     <string name="confirm_your_identity_quad_s">Confirm your identity by verifying this login, granting it access to encrypted messages.</string>
 
     <string name="failed_to_initialize_cross_signing">Failed to set up Cross Signing</string>
@@ -2673,6 +2746,8 @@
         <item quantity="other">Invitations sent to %1$s and %2$d more</item>
     </plurals>
     <string name="invite_users_to_room_failure">We could not invite users. Please check the users you want to invite and try again.</string>
+    <string name="invite_unknown_users_dialog_content">Unable to find profiles for the Matrix IDs listed below. Would you like to invite them anyway?\n\n%s</string>
+    <string name="invite_unknown_users_dialog_submit">Invite anyway</string>
 
     <string name="user_code_scan">Scan a QR code</string>
     <string name="user_code_share">Share my code</string>
@@ -2739,10 +2814,14 @@
     <string name="crypto_error_withheld_generic">You cannot access this message because the sender purposely did not send the keys</string>
     <string name="notice_crypto_unable_to_decrypt_merged">Waiting for encryption history</string>
 
-    <string name="disclaimer_title">Riot is now Element!</string>
-    <string name="disclaimer_content">We’re excited to announce we’ve changed name! Your app is up to date and you’re signed in to your account.</string>
-    <string name="disclaimer_negative_button">GOT IT</string>
-    <string name="disclaimer_positive_button">LEARN MORE</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="disclaimer_title">Riot is now Element!</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="disclaimer_content">We’re excited to announce we’ve changed name! Your app is up to date and you’re signed in to your account.</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="disclaimer_negative_button">GOT IT</string>
+    <!-- TODO TO BE REMOVED -->
+    <string tools:ignore="UnusedResources" name="disclaimer_positive_button">LEARN MORE</string>
 
     <string name="save_recovery_key_chooser_hint">Save recovery key in</string>
 
@@ -3010,7 +3089,7 @@
 
     <string name="labs_auto_report_uisi">Auto Report Decryption Errors.</string>
     <string name="labs_auto_report_uisi_desc">Your system will automatically send logs when an unable to decrypt error occurs</string>
-    <string name="labs_enable_thread_messages">Enable Thread Messages</string>
+    <string name="labs_enable_thread_messages">Enable threaded messages</string>
     <string name="labs_enable_thread_messages_desc">Note: app will be restarted</string>
     <string name="settings_show_latest_profile">Show latest user info</string>
     <string name="settings_show_latest_profile_description">Show the latest profile info (avatar and display name) for all the messages.</string>
@@ -3068,6 +3147,8 @@
     <string name="error_voice_message_unable_to_play">Cannot play this voice message</string>
     <string name="error_voice_message_unable_to_record">Cannot record a voice message</string>
     <string name="error_voice_message_cannot_reply_or_edit">Cannot reply or edit while voice message is active</string>
+    <string name="error_voice_message_broadcast_in_progress">Cannot start voice message</string>
+    <string name="error_voice_message_broadcast_in_progress_message">You can’t start a voice message as you are currently recording a live broadcast. Please end your live broadcast in order to start recording a voice message</string>
     <string name="voice_message_reply_content">Voice Message (%1$s)</string>
 
     <string name="a11y_audio_message_item">%1$s, %2$s, %3$s</string> <!-- filename, duration, file size -->
@@ -3077,6 +3158,28 @@
     <string name="error_audio_message_unable_to_play">Unable to play %1$s</string>
     <string name="audio_message_reply_content">%1$s (%2$s)</string>
     <string name="audio_message_file_size">(%1$s)</string>
+
+    <string name="voice_broadcast_live">Live</string>
+    <string name="voice_broadcast_live_broadcast">Live broadcast</string>
+    <string name="voice_broadcast_buffering">Buffering…</string>
+    <string name="a11y_resume_voice_broadcast_record">Resume voice broadcast record</string>
+    <string name="a11y_pause_voice_broadcast_record">Pause voice broadcast record</string>
+    <string name="a11y_stop_voice_broadcast_record">Stop voice broadcast record</string>
+    <string name="a11y_play_voice_broadcast">Play or resume voice broadcast</string>
+    <string name="a11y_pause_voice_broadcast">Pause voice broadcast</string>
+    <string name="a11y_voice_broadcast_fast_backward">Fast backward 30 seconds</string>
+    <string name="a11y_voice_broadcast_fast_forward">Fast forward 30 seconds</string>
+    <string name="error_voice_broadcast_unauthorized_title">Can’t start a new voice broadcast</string>
+    <string name="error_voice_broadcast_permission_denied_message">You don’t have the required permissions to start a voice broadcast in this room. Contact a room administrator to upgrade your permissions.</string>
+    <string name="error_voice_broadcast_blocked_by_someone_else_message">Someone else is already recording a voice broadcast. Wait for their voice broadcast to end to start a new one.</string>
+    <string name="error_voice_broadcast_already_in_progress_message">You are already recording a voice broadcast. Please end your current voice broadcast to start a new one.</string>
+    <string name="error_voice_broadcast_unable_to_play">Unable to play this voice broadcast.</string>
+    <string name="error_voice_broadcast_no_connection_recording">Connection error - Recording paused</string>
+    <string name="error_voice_broadcast_unable_to_decrypt">Unable to decrypt this voice broadcast.</string>
+    <!-- Examples of usage: 6h 15min 30sec left / 15min 30sec left / 30sec left -->
+    <string name="voice_broadcast_recording_time_left">%1$s left</string>
+    <string name="stop_voice_broadcast_dialog_title">Stop live broadcasting?</string>
+    <string name="stop_voice_broadcast_content">Are you sure you want to stop your live broadcast? This will end the broadcast and the full recording will be available in the room.</string>
 
     <string name="upgrade_room_for_restricted">Anyone in %s will be able to find and join this room - no need to manually invite everyone. You’ll be able to change this in room settings anytime.</string>
     <string name="upgrade_room_for_restricted_no_param">Anyone in a parent space will be able to find and join this room - no need to manually invite everyone. You’ll be able to change this in room settings anytime.</string>
@@ -3130,7 +3233,6 @@
         <item quantity="other">Final result based on %1$d votes</item>
     </plurals>
     <string name="poll_end_action">End poll</string>
-    <string name="a11y_poll_winner_option">winner option</string>
     <string name="end_poll_confirmation_title">End this poll?</string>
     <string name="end_poll_confirmation_description">This will stop people from being able to vote and will display the final results of the poll.</string>
     <string name="end_poll_confirmation_approve_button">End poll</string>
@@ -3144,6 +3246,24 @@
     <string name="open_poll_option_description">Voters see results as soon as they have voted</string>
     <string name="closed_poll_option_title">Closed poll</string>
     <string name="closed_poll_option_description">Results are only revealed when you end the poll</string>
+    <string name="ended_poll_indicator">Ended the poll.</string>
+    <string name="unable_to_decrypt_some_events_in_poll">Due to decryption errors, some votes may not be counted</string>
+    <string name="room_polls_active">Active polls</string>
+    <string name="room_polls_active_no_item">There are no active polls in this room</string>
+    <plurals name="room_polls_active_no_item_for_loaded_period">
+        <item quantity="one">"There are no active polls for the past day.\nLoad more polls to view polls for previous days."</item>
+        <item quantity="other">"There are no active polls for the past %1$d days.\nLoad more polls to view polls for previous days."</item>
+    </plurals>
+    <string name="room_polls_ended">Past polls</string>
+    <string name="room_polls_ended_no_item">There are no past polls in this room</string>
+    <plurals name="room_polls_ended_no_item_for_loaded_period">
+        <item quantity="one">"There are no past polls for the past day.\nLoad more polls to view polls for previous days."</item>
+        <item quantity="other">"There are no past polls for the past %1$d days.\nLoad more polls to view polls for previous days."</item>
+    </plurals>
+    <string name="room_polls_wait_for_display">Displaying polls</string>
+    <string name="room_polls_load_more">Load more polls</string>
+    <string name="room_polls_loading_error">Error fetching polls.</string>
+    <string name="room_poll_details_go_to_timeline">View poll in timeline</string>
 
     <!-- Location -->
     <string name="location_activity_title_static_sharing">Share location</string>
@@ -3196,6 +3316,16 @@
     <string name="tooltip_attachment_poll">Create poll</string>
     <string name="tooltip_attachment_location">Share location</string>
     <string name="tooltip_attachment_voice_broadcast">Start a voice broadcast</string>
+
+    <string name="attachment_type_selector_gallery">Photo library</string>
+    <string name="attachment_type_selector_sticker">Stickers</string>
+    <string name="attachment_type_selector_file">Attachments</string>
+    <string name="attachment_type_selector_voice_broadcast">Voice broadcast</string>
+    <string name="attachment_type_selector_poll">Polls</string>
+    <string name="attachment_type_selector_location">Location</string>
+    <string name="attachment_type_selector_camera">Camera</string>
+    <string name="attachment_type_selector_contact">Contact</string>
+    <string name="attachment_type_selector_text_formatting">Text formatting</string>
 
     <string name="message_reaction_show_less">Show less</string>
     <plurals name="message_reaction_show_more">
@@ -3259,6 +3389,7 @@
     <string name="device_manager_verification_status_detail_current_session_unverified">Verify your current session for enhanced secure messaging.</string>
     <string name="device_manager_verification_status_detail_other_session_unverified">Verify or sign out from this session for best security and reliability.</string>
     <string name="device_manager_verification_status_detail_other_session_unknown">Verify your current session to reveal this session\'s verification status.</string>
+    <string name="device_manager_verification_status_detail_session_encryption_not_supported">This session doesn\'t support encryption and thus can\'t be verified.</string>
     <string name="device_manager_verify_session">Verify Session</string>
     <string name="device_manager_view_details">View Details</string>
     <string name="device_manager_other_sessions_view_all">View All (%1$d)</string>
@@ -3281,7 +3412,7 @@
         <item quantity="one">Consider signing out from old sessions (%1$d day or more) that you don’t use anymore.</item>
         <item quantity="other">Consider signing out from old sessions (%1$d days or more) that you don’t use anymore.</item>
     </plurals>
-    <string name="device_manager_current_session_title">Current Session</string>
+    <string name="device_manager_current_session_title">Current session</string>
     <string name="device_manager_session_title">Session</string>
     <string name="device_manager_device_title">Device</string>
     <!--  Examples: Last activity Yesterday at 6PM, Last activity Aug 31 at 5:47PM -->
@@ -3311,6 +3442,15 @@
     <string name="device_manager_other_sessions_no_unverified_sessions_found">No unverified sessions found.</string>
     <string name="device_manager_other_sessions_no_inactive_sessions_found">No inactive sessions found.</string>
     <string name="device_manager_other_sessions_clear_filter">Clear Filter</string>
+    <string name="device_manager_other_sessions_select">Select sessions</string>
+    <string name="device_manager_other_sessions_multi_signout_selection">Sign out</string>
+    <plurals name="device_manager_other_sessions_multi_signout_all">
+        <item quantity="one">Sign out of %1$d session</item>
+        <item quantity="other">Sign out of %1$d sessions</item>
+    </plurals>
+    <string name="device_manager_signout_all_other_sessions">Sign out of all other sessions</string>
+    <string name="device_manager_other_sessions_show_ip_address">Show IP address</string>
+    <string name="device_manager_other_sessions_hide_ip_address">Hide IP address</string>
     <string name="device_manager_session_overview_signout">Sign out of this session</string>
     <string name="device_manager_session_details_title">Session details</string>
     <string name="device_manager_session_details_description">Application, device, and activity information.</string>
@@ -3339,14 +3479,15 @@
     <string name="device_manager_learn_more_sessions_unverified_title">Unverified sessions</string>
     <string name="device_manager_learn_more_sessions_unverified">Unverified sessions are sessions that have logged in with your credentials but not been cross-verified.\n\nYou should make especially certain that you recognise these sessions as they could represent an unauthorised use of your account.</string>
     <string name="device_manager_learn_more_sessions_verified_title">Verified sessions</string>
-    <string name="device_manager_learn_more_sessions_verified">Verified sessions have logged in with your credentials and then been verified, either using your secure passphrase or by cross-verifying.\n\nThis means they hold encryption keys for your previous messages, and confirm to other users you are communicating with that these sessions are really you.</string>
+    <string name="device_manager_learn_more_sessions_verified_description">Verified sessions are anywhere you are using this account after entering your passphrase or confirming your identity with another verified session.\n\nThis means that you have all the keys needed to unlock your encrypted messages and confirm to other users that you trust this session.</string>
+    <string name="device_manager_learn_more_sessions_encryption_not_supported">This session doesn\'t support encryption, so it can\'t be verified.\n\nYou won\'t be able to participate in rooms where encryption is enabled when using this session.\n\nFor best security and privacy, it is recommended to use Matrix clients that support encryption.</string>
     <string name="device_manager_learn_more_session_rename_title">Renaming sessions</string>
     <string name="device_manager_learn_more_session_rename">Other users in direct messages and rooms that you join are able to view a full list of your sessions.\n\nThis provides them with confidence that they are really speaking to you, but it also means they can see the session name you enter here.</string>
     <string name="labs_enable_session_manager_title">Enable new session manager</string>
     <string name="labs_enable_session_manager_summary">Have greater visibility and control over all your sessions.</string>
     <string name="labs_enable_client_info_recording_title">Enable client info recording</string>
     <string name="labs_enable_client_info_recording_summary">Record the client name, version, and url to recognise sessions more easily in session manager.</string>
-    <string name="labs_enable_voice_broadcast_title">Enable voice broadcast (under active development)</string>
+    <string name="labs_enable_voice_broadcast_title">Enable voice broadcast</string>
     <string name="labs_enable_voice_broadcast_summary">Be able to record and send voice broadcast in room timeline.</string>
 
     <!-- Note to translators: %s will be replaces with selected space name -->
@@ -3386,9 +3527,16 @@
     <string name="qr_code_login_header_failed_device_is_not_supported_description">Linking with this device is not supported.</string>
     <string name="qr_code_login_header_failed_timeout_description">The linking wasn’t completed in the required time.</string>
     <string name="qr_code_login_header_failed_denied_description">The request was denied on the other device.</string>
-    <string name="qr_code_login_new_device_instruction_1">Open ${app_name} on your other device</string>
-    <string name="qr_code_login_new_device_instruction_2">Go to Settings -> Security &amp; Privacy -> Show All Sessions</string>
-    <string name="qr_code_login_new_device_instruction_3">Select \'Show QR code in this device\'</string>
+    <string name="qr_code_login_header_failed_other_description">The request failed.</string>
+    <string name="qr_code_login_header_failed_e2ee_security_issue_description">A security issue was encountered setting up secure messaging. One of the following may be compromised: Your homeserver; Your internet connection(s); Your device(s);</string>
+    <string name="qr_code_login_header_failed_other_device_already_signed_in_description">The other device is already signed in.</string>
+    <string name="qr_code_login_header_failed_other_device_not_signed_in_description">The other device must be signed in.</string>
+    <string name="qr_code_login_header_failed_invalid_qr_code_description">That QR code is invalid.</string>
+    <string name="qr_code_login_header_failed_user_cancelled_description">The sign in was cancelled on the other device.</string>
+    <string name="qr_code_login_header_failed_homeserver_is_not_supported_description">The homeserver doesn\'t support sign in with QR code.</string>
+    <string name="qr_code_login_new_device_instruction_1">Open the app on your other device</string>
+    <string name="qr_code_login_new_device_instruction_2">Go to Settings -> Security &amp; Privacy</string>
+    <string name="qr_code_login_new_device_instruction_3">Select \'Show QR code\'</string>
     <string name="qr_code_login_link_a_device_scan_qr_code_instruction_1">Start at the sign in screen</string>
     <string name="qr_code_login_link_a_device_scan_qr_code_instruction_2">Select \'Sign in with QR code\'</string>
     <string name="qr_code_login_link_a_device_show_qr_code_instruction_1">Start at the sign in screen</string>
@@ -3403,10 +3551,46 @@
     <string name="qr_code_login_confirm_security_code">Confirm</string>
     <string name="qr_code_login_confirm_security_code_description">Please ensure that you know the origin of this code. By linking devices, you will provide someone with full access to your account.</string>
 
-    <!-- WYSIWYG Composer -->
+    <!-- Rich text editor -->
     <string name="rich_text_editor_format_bold">Apply bold format</string>
     <string name="rich_text_editor_format_italic">Apply italic format</string>
     <string name="rich_text_editor_format_strikethrough">Apply strikethrough format</string>
     <string name="rich_text_editor_format_underline">Apply underline format</string>
+    <string name="rich_text_editor_link">Set link</string>
+    <string name="rich_text_editor_numbered_list">Toggle numbered list</string>
+    <string name="rich_text_editor_bullet_list">Toggle bullet list</string>
+    <string name="rich_text_editor_indent">Indent</string>
+    <string name="rich_text_editor_unindent">Unindent</string>
+    <string name="rich_text_editor_quote">Toggle quote</string>
+    <string name="rich_text_editor_inline_code">Apply inline code format</string>
+    <string name="rich_text_editor_code_block">Toggle code block</string>
+    <string name="rich_text_editor_full_screen_toggle">Toggle full screen mode</string>
 
+    <string name="set_link_text">Text</string>
+    <string name="set_link_link">Link</string>
+    <string name="set_link_create">Create a link</string>
+    <string name="set_link_edit">Edit link</string>
+
+    <!-- ReplyTo events -->
+    <string name="message_reply_to_prefix">In reply to</string>
+    <string name="message_reply_to_sender_sent_file">sent a file.</string>
+    <string name="message_reply_to_sender_sent_audio_file">sent an audio file.</string>
+    <string name="message_reply_to_sender_sent_voice_message">sent a voice message.</string>
+    <string name="message_reply_to_sender_sent_image">sent an image.</string>
+    <string name="message_reply_to_sender_sent_video">sent a video.</string>
+    <string name="message_reply_to_sender_sent_sticker">sent a sticker.</string>
+    <string name="message_reply_to_sender_created_poll">created a poll.</string>
+    <string name="message_reply_to_sender_ended_poll">ended a poll.</string>
+    <string name="message_reply_to_poll_preview">Poll</string>
+    <string name="message_reply_to_ended_poll_preview">Ended poll</string>
+
+    <string name="settings_access_token">Access Token</string>
+    <string name="settings_access_token_summary">Your access token gives full access to your account. Do not share it with anyone.</string>
+
+    <!-- Pills -->
+    <string name="pill_message_from_user">Message from %s</string>
+    <string name="pill_message_from_unknown_user">Message</string>
+    <string name="pill_message_in_room">Message in %s</string>
+    <string name="pill_message_in_unknown_room">Message in room</string>
+    <string name="pill_message_unknown_room_or_space">Room/Space</string>
 </resources>

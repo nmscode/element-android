@@ -31,7 +31,7 @@ import im.vector.app.core.epoxy.LoadingItem_
 import im.vector.app.core.extensions.localDateTime
 import im.vector.app.core.extensions.nextOrNull
 import im.vector.app.core.extensions.prevOrNull
-import im.vector.app.core.time.Clock
+import im.vector.app.features.home.AvatarRenderer
 import im.vector.app.features.home.room.detail.JitsiState
 import im.vector.app.features.home.room.detail.RoomDetailAction
 import im.vector.app.features.home.room.detail.RoomDetailViewState
@@ -57,11 +57,14 @@ import im.vector.app.features.home.room.detail.timeline.item.MessageInformationD
 import im.vector.app.features.home.room.detail.timeline.item.ReactionsSummaryEvents
 import im.vector.app.features.home.room.detail.timeline.item.ReadReceiptData
 import im.vector.app.features.home.room.detail.timeline.item.ReadReceiptsItem
+import im.vector.app.features.home.room.detail.timeline.item.TypingItem_
+import im.vector.app.features.home.room.detail.timeline.readreceipts.ReadReceiptsCache
 import im.vector.app.features.home.room.detail.timeline.url.PreviewUrlRetriever
 import im.vector.app.features.media.AttachmentData
 import im.vector.app.features.media.ImageContentRenderer
 import im.vector.app.features.media.VideoContentRenderer
 import im.vector.app.features.settings.VectorPreferences
+import im.vector.lib.core.utils.timer.Clock
 import org.matrix.android.sdk.api.session.Session
 import org.matrix.android.sdk.api.session.events.model.EventType
 import org.matrix.android.sdk.api.session.events.model.toModel
@@ -94,6 +97,7 @@ class TimelineEventController @Inject constructor(
         private val readReceiptsItemFactory: ReadReceiptsItemFactory,
         private val reactionListFactory: ReactionsSummaryFactory,
         private val clock: Clock,
+        private val avatarRenderer: AvatarRenderer,
 ) : EpoxyController(backgroundHandler, backgroundHandler), Timeline.Listener, EpoxyController.Interceptor {
 
     /**
@@ -104,7 +108,7 @@ class TimelineEventController @Inject constructor(
             val highlightedEventId: String? = null,
             val jitsiState: JitsiState = JitsiState(),
             val roomSummary: RoomSummary? = null,
-            val rootThreadEventId: String? = null
+            val rootThreadEventId: String? = null,
     ) {
 
         constructor(state: RoomDetailViewState) : this(
@@ -112,7 +116,7 @@ class TimelineEventController @Inject constructor(
                 highlightedEventId = state.highlightedEventId,
                 jitsiState = state.jitsiState,
                 roomSummary = state.asyncRoomSummary(),
-                rootThreadEventId = state.rootThreadEventId
+                rootThreadEventId = state.rootThreadEventId,
         )
 
         fun isFromThreadTimeline(): Boolean = rootThreadEventId != null
@@ -197,7 +201,7 @@ class TimelineEventController @Inject constructor(
     // Map eventId to adapter position
     private val adapterPositionMapping = HashMap<String, Int>()
     private val timelineEventsGroups = TimelineEventsGroups()
-    private val receiptsByEvent = HashMap<String, MutableList<ReadReceipt>>()
+    private val readReceiptsCache = ReadReceiptsCache()
     private val modelCache = arrayListOf<CacheItemData?>()
     private var currentSnapshot: List<TimelineEvent> = emptyList()
     private var inSubmitList: Boolean = false
@@ -286,7 +290,7 @@ class TimelineEventController @Inject constructor(
 
     private val interceptorHelper = TimelineControllerInterceptorHelper(
             ::positionOfReadMarker,
-            adapterPositionMapping
+            adapterPositionMapping,
     )
 
     init {
@@ -333,6 +337,12 @@ class TimelineEventController @Inject constructor(
                 .id("forward_loading_item_$timestamp")
                 .setVisibilityStateChangedListener(Timeline.Direction.FORWARDS)
                 .addWhenLoading(Timeline.Direction.FORWARDS)
+
+        if (!showingForwardLoader) {
+            val typingUsers = partialState.roomSummary?.typingUsers.orEmpty()
+            val typingItem = TypingItem_().id("typing_view").avatarRenderer(avatarRenderer).users(typingUsers)
+            add(typingItem)
+        }
 
         val timelineModels = getModels()
         add(timelineModels)
@@ -407,7 +417,7 @@ class TimelineEventController @Inject constructor(
         }
         Timber.v("Preprocess events took $preprocessEventsTiming ms")
         var numberOfEventsToBuild = 0
-        val lastSentEventWithoutReadReceipts = searchLastSentEventWithoutReadReceipts(receiptsByEvent)
+        val lastSentEventWithoutReadReceipts = searchLastSentEventWithoutReadReceipts(readReceiptsCache.receiptsByEvent())
         (0 until modelCache.size).forEach { position ->
             val event = currentSnapshot[position]
             val nextEvent = currentSnapshot.nextOrNull(position)
@@ -433,6 +443,7 @@ class TimelineEventController @Inject constructor(
                 val timelineEventsGroup = timelineEventsGroups.getOrNull(event)
                 val params = TimelineItemFactoryParams(
                         event = event,
+                        lastEdit = event.annotations?.editSummary?.latestEdit,
                         prevEvent = prevEvent,
                         prevDisplayableEvent = prevDisplayableEvent,
                         nextEvent = nextEvent,
@@ -452,7 +463,7 @@ class TimelineEventController @Inject constructor(
             }
             val itemCachedData = modelCache[position] ?: return@forEach
             // Then update with additional models if needed
-            modelCache[position] = itemCachedData.enrichWithModels(event, nextEvent, position, receiptsByEvent)
+            modelCache[position] = itemCachedData.enrichWithModels(event, nextEvent, position, readReceiptsCache.receiptsByEvent())
         }
         Timber.v("Number of events to rebuild: $numberOfEventsToBuild on ${modelCache.size} total events")
     }
@@ -506,7 +517,7 @@ class TimelineEventController @Inject constructor(
                         event.eventId,
                         readReceipts,
                         callback,
-                        partialState.isFromThreadTimeline()
+                        partialState.isFromThreadTimeline(),
                 ),
                 formattedDayModel = formattedDayModel,
                 mergedHeaderModel = mergedHeaderModel
@@ -541,14 +552,14 @@ class TimelineEventController @Inject constructor(
     }
 
     private fun preprocessReverseEvents() {
-        receiptsByEvent.clear()
+        readReceiptsCache.clear()
         timelineEventsGroups.clear()
         val itr = currentSnapshot.listIterator(currentSnapshot.size)
         var lastShownEventId: String? = null
         while (itr.hasPrevious()) {
             val event = itr.previous()
             timelineEventsGroups.addOrIgnore(event)
-            val currentReadReceipts = ArrayList(event.readReceipts).filter {
+            val currentReadReceipts = event.readReceipts.filter {
                 it.roomMember.userId != session.myUserId
             }
             if (timelineEventVisibilityHelper.shouldShowEvent(
@@ -562,8 +573,7 @@ class TimelineEventController @Inject constructor(
             if (lastShownEventId == null) {
                 continue
             }
-            val existingReceipts = receiptsByEvent.getOrPut(lastShownEventId) { ArrayList() }
-            existingReceipts.addAll(currentReadReceipts)
+            readReceiptsCache.addReceiptsOnEvent(currentReadReceipts, lastShownEventId)
         }
     }
 

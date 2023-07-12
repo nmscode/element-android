@@ -23,7 +23,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.matrix.android.sdk.MatrixTest
+import org.matrix.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.matrix.android.sdk.api.session.crypto.model.OlmDecryptionResult
 import org.matrix.android.sdk.api.session.events.model.Event
+import org.matrix.android.sdk.api.session.events.model.EventType
+import org.matrix.android.sdk.api.session.events.model.content.EncryptedEventContent
 import org.matrix.android.sdk.api.session.events.model.toContent
 import org.matrix.android.sdk.api.session.room.Room
 import org.matrix.android.sdk.api.session.room.members.MembershipService
@@ -38,18 +42,43 @@ class PushRulesConditionTest : MatrixTest {
      * Test EventMatchCondition
      * ========================================================================================== */
 
+    private fun createFakeEncryptedEvent() = Event(
+            type = EventType.ENCRYPTED,
+            eventId = "mx0",
+            roomId = "!fakeRoom",
+            content = EncryptedEventContent(
+                    algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
+                    ciphertext = "AwgBEpACQEKOkd4Gp0+gSXG4M+btcrnPgsF23xs/lUmS2I4YjmqF...",
+                    sessionId = "TO2G4u2HlnhtbIJk",
+                    senderKey = "5e3EIqg3JfooZnLQ2qHIcBarbassQ4qXblai0",
+                    deviceId = "FAKEE"
+            ).toContent()
+    )
+
     private fun createSimpleTextEvent(text: String): Event {
         return Event(
-                type = "m.room.message",
+                type = EventType.MESSAGE,
                 eventId = "mx0",
                 content = MessageTextContent("m.text", text).toContent(),
-                originServerTs = 0
+                originServerTs = 0,
         )
+    }
+
+    private fun createSimpleTextEventEncrypted(text: String): Event {
+        return createFakeEncryptedEvent().apply {
+            mxDecryptionResult = OlmDecryptionResult(
+                    payload = mapOf(
+                            "type" to EventType.MESSAGE,
+                            "content" to MessageTextContent("m.text", text).toContent(),
+                    ),
+                    senderKey = "the_real_sender_key",
+            )
+        }
     }
 
     @Test
     fun test_eventmatch_type_condition() {
-        val condition = EventMatchCondition("type", "m.room.message", false)
+        val condition = EventMatchCondition("type", "m.room.message")
 
         val simpleTextEvent = createSimpleTextEvent("Yo wtf?")
 
@@ -67,12 +96,32 @@ class PushRulesConditionTest : MatrixTest {
         )
 
         assert(condition.isSatisfied(simpleTextEvent))
-        assert(!condition.isSatisfied(simpleRoomMemberEvent))
+        assertFalse(condition.isSatisfied(simpleRoomMemberEvent))
+    }
+
+    @Test
+    fun test_decrypted_eventmatch_type_condition() {
+        val condition = EventMatchCondition("type", "m.room.message")
+
+        val simpleDecryptedTextEvent = createSimpleTextEventEncrypted("Yo wtf?")
+
+        val encryptedDummyEvent = createFakeEncryptedEvent().apply {
+            mxDecryptionResult = OlmDecryptionResult(
+                    payload = mapOf(
+                            "type" to EventType.DUMMY,
+                    )
+            )
+        }
+        val encryptedEvent = createFakeEncryptedEvent()
+
+        assert(condition.isSatisfied(simpleDecryptedTextEvent))
+        assertFalse(condition.isSatisfied(encryptedDummyEvent))
+        assertFalse(condition.isSatisfied(encryptedEvent))
     }
 
     @Test
     fun test_eventmatch_path_condition() {
-        val condition = EventMatchCondition("content.msgtype", "m.text", false)
+        val condition = EventMatchCondition("content.msgtype", "m.text")
 
         val simpleTextEvent = createSimpleTextEvent("Yo wtf?")
 
@@ -89,28 +138,29 @@ class PushRulesConditionTest : MatrixTest {
                 ).toContent(),
                 originServerTs = 0
         ).apply {
-            assert(EventMatchCondition("content.membership", "invite", false).isSatisfied(this))
+            assert(EventMatchCondition("content.membership", "invite").isSatisfied(this))
         }
     }
 
     @Test
     fun test_eventmatch_cake_condition() {
-        val condition = EventMatchCondition("content.body", "cake", false)
+        val condition = EventMatchCondition("content.body", "cake")
 
         assert(condition.isSatisfied(createSimpleTextEvent("How was the cake?")))
-        assert(condition.isSatisfied(createSimpleTextEvent("Howwasthecake?")))
+        assertFalse(condition.isSatisfied(createSimpleTextEvent("Howwasthecake?")))
     }
 
     @Test
     fun test_eventmatch_cakelie_condition() {
-        val condition = EventMatchCondition("content.body", "cake*lie", false)
+        val condition = EventMatchCondition("content.body", "cake*lie")
 
         assert(condition.isSatisfied(createSimpleTextEvent("How was the cakeisalie?")))
+        assertFalse(condition.isSatisfied(createSimpleTextEvent("How was the notcakeisalie?")))
     }
 
     @Test
     fun test_eventmatch_words_only_condition() {
-        val condition = EventMatchCondition("content.body", "ben", true)
+        val condition = EventMatchCondition("content.body", "ben")
 
         assertFalse(condition.isSatisfied(createSimpleTextEvent("benoit")))
         assertFalse(condition.isSatisfied(createSimpleTextEvent("Hello benoit")))
@@ -125,8 +175,54 @@ class PushRulesConditionTest : MatrixTest {
     }
 
     @Test
+    fun test_encrypted_eventmatch_words_only_condition() {
+        val condition = EventMatchCondition("content.body", "ben")
+
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("benoit")))
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("Hello benoit")))
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("superben")))
+
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("ben")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("hello ben")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("ben is there")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("hello ben!")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("hello Ben!")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("BEN")))
+    }
+
+    @Test
+    fun test_eventmatch_at_room_condition() {
+        val condition = EventMatchCondition("content.body", "@room")
+
+        assertFalse(condition.isSatisfied(createSimpleTextEvent("@roomba")))
+        assertFalse(condition.isSatisfied(createSimpleTextEvent("room benoit")))
+        assertFalse(condition.isSatisfied(createSimpleTextEvent("abc@roomba")))
+
+        assert(condition.isSatisfied(createSimpleTextEvent("@room")))
+        assert(condition.isSatisfied(createSimpleTextEvent("@room, ben")))
+        assert(condition.isSatisfied(createSimpleTextEvent("@ROOM")))
+        assert(condition.isSatisfied(createSimpleTextEvent("Use:@room")))
+        assert(condition.isSatisfied(createSimpleTextEvent("Don't ping @room!")))
+    }
+
+    @Test
+    fun test_encrypted_eventmatch_at_room_condition() {
+        val condition = EventMatchCondition("content.body", "@room")
+
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("@roomba")))
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("room benoit")))
+        assertFalse(condition.isSatisfied(createSimpleTextEventEncrypted("abc@roomba")))
+
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("@room")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("@room, ben")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("@ROOM")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("Use:@room")))
+        assert(condition.isSatisfied(createSimpleTextEventEncrypted("Don't ping @room!")))
+    }
+
+    @Test
     fun test_notice_condition() {
-        val conditionEqual = EventMatchCondition("content.msgtype", "m.notice", false)
+        val conditionEqual = EventMatchCondition("content.msgtype", "m.notice")
 
         Event(
                 type = "m.room.message",
@@ -137,6 +233,17 @@ class PushRulesConditionTest : MatrixTest {
         ).also {
             assertTrue("Notice", conditionEqual.isSatisfied(it))
         }
+    }
+
+    @Test
+    fun test_eventmatch_encrypted_type_condition() {
+        val condition = EventMatchCondition("type", "m.room.encrypted")
+
+        val simpleDecryptedTextEvent = createSimpleTextEventEncrypted("Yo wtf?")
+        val encryptedEvent = createFakeEncryptedEvent()
+
+        assertFalse(condition.isSatisfied(simpleDecryptedTextEvent))
+        assert(condition.isSatisfied(encryptedEvent))
     }
 
     /* ==========================================================================================

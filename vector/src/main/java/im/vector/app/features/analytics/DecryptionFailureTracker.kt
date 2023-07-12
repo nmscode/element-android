@@ -16,10 +16,10 @@
 
 package im.vector.app.features.analytics
 
-import im.vector.app.core.time.Clock
 import im.vector.app.features.analytics.plan.Error
 import im.vector.lib.core.utils.compat.removeIfCompat
 import im.vector.lib.core.utils.flow.tickerFlow
+import im.vector.lib.core.utils.timer.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -57,6 +57,8 @@ class DecryptionFailureTracker @Inject constructor(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
     private val failures = mutableListOf<DecryptionFailure>()
     private val alreadyReported = mutableListOf<String>()
+
+    var currentModule: Error.CryptoModule? = null
 
     init {
         start()
@@ -137,7 +139,12 @@ class DecryptionFailureTracker @Inject constructor(
                     // for now we ignore events already reported even if displayed again?
                     .filter { alreadyReported.contains(it).not() }
                     .forEach { failedEventId ->
-                        analyticsTracker.capture(Error(aggregation.key.first, Error.Domain.E2EE, aggregation.key.second))
+                        analyticsTracker.capture(Error(
+                                context = aggregation.key.first,
+                                domain = Error.Domain.E2EE,
+                                name = aggregation.key.second,
+                                cryptoModule = currentModule
+                        ))
                         alreadyReported.add(failedEventId)
                     }
         }

@@ -18,13 +18,14 @@ package org.matrix.android.sdk.internal.session.room.relation.threads
 import com.zhuinden.monarchy.Monarchy
 import io.realm.Realm
 import org.matrix.android.sdk.api.extensions.tryOrNull
+import org.matrix.android.sdk.api.session.crypto.CryptoService
 import org.matrix.android.sdk.api.session.crypto.MXCryptoError
 import org.matrix.android.sdk.api.session.crypto.model.OlmDecryptionResult
 import org.matrix.android.sdk.api.session.events.model.Event
 import org.matrix.android.sdk.api.session.events.model.EventType
+import org.matrix.android.sdk.api.session.events.model.RelationType
 import org.matrix.android.sdk.api.session.room.model.RoomMemberContent
 import org.matrix.android.sdk.api.session.room.send.SendState
-import org.matrix.android.sdk.internal.crypto.DefaultCryptoService
 import org.matrix.android.sdk.internal.database.RealmSessionProvider
 import org.matrix.android.sdk.internal.database.helper.addTimelineEvent
 import org.matrix.android.sdk.internal.database.mapper.asDomain
@@ -88,7 +89,7 @@ internal class DefaultFetchThreadTimelineTask @Inject constructor(
         private val roomAPI: RoomAPI,
         private val globalErrorReceiver: GlobalErrorReceiver,
         @SessionDatabase private val monarchy: Monarchy,
-        private val cryptoService: DefaultCryptoService,
+        private val cryptoService: CryptoService,
         private val clock: Clock,
         private val realmSessionProvider: RealmSessionProvider,
         private val getEventTask: GetEventTask,
@@ -102,11 +103,12 @@ internal class DefaultFetchThreadTimelineTask @Inject constructor(
 
     override suspend fun execute(params: FetchThreadTimelineTask.Params): Result {
         val response = executeRequest(globalErrorReceiver) {
-            roomAPI.getThreadsRelations(
+            roomAPI.getRelations(
                     roomId = params.roomId,
                     eventId = params.rootThreadEventId,
+                    relationType = RelationType.THREAD,
                     from = params.from,
-                    limit = params.limit
+                    limit = params.limit,
             )
         }
 
@@ -133,7 +135,7 @@ internal class DefaultFetchThreadTimelineTask @Inject constructor(
             if (!isRootThreadTimelineEventEntityKnown) {
                 // Fetch the root event from the server
                 threadRootEvent = tryOrNull {
-                    getEventTask.execute(GetEventTask.Params(roomId = params.roomId, eventId = params.rootThreadEventId))
+                        getEventTask.execute(GetEventTask.Params(roomId = params.roomId, eventId = params.rootThreadEventId))
                 }
             }
         }
@@ -246,7 +248,7 @@ internal class DefaultFetchThreadTimelineTask @Inject constructor(
                     senderKey = result.senderCurve25519Key,
                     keysClaimed = result.claimedEd25519Key?.let { k -> mapOf("ed25519" to k) },
                     forwardingCurve25519KeyChain = result.forwardingCurve25519KeyChain,
-                    isSafe = result.isSafe
+                    verificationState = result.messageVerificationState
             )
         } catch (e: MXCryptoError) {
             if (e is MXCryptoError.Base) {

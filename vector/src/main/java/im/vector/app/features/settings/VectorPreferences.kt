@@ -27,12 +27,11 @@ import im.vector.app.R
 import im.vector.app.core.di.DefaultPreferences
 import im.vector.app.core.resources.BuildMeta
 import im.vector.app.core.resources.StringProvider
-import im.vector.app.core.time.Clock
 import im.vector.app.features.VectorFeatures
-import im.vector.app.features.disclaimer.SHARED_PREF_KEY
 import im.vector.app.features.home.ShortcutsHandler
 import im.vector.app.features.homeserver.ServerUrlsRepository
 import im.vector.app.features.themes.ThemeUtils
+import im.vector.lib.core.utils.timer.Clock
 import org.matrix.android.sdk.api.extensions.tryOrNull
 import timber.log.Timber
 import javax.inject.Inject
@@ -52,12 +51,13 @@ class VectorPreferences @Inject constructor(
         const val SETTINGS_CHANGE_PASSWORD_PREFERENCE_KEY = "SETTINGS_CHANGE_PASSWORD_PREFERENCE_KEY"
         const val SETTINGS_VERSION_PREFERENCE_KEY = "SETTINGS_VERSION_PREFERENCE_KEY"
         const val SETTINGS_SDK_VERSION_PREFERENCE_KEY = "SETTINGS_SDK_VERSION_PREFERENCE_KEY"
-        const val SETTINGS_OLM_VERSION_PREFERENCE_KEY = "SETTINGS_OLM_VERSION_PREFERENCE_KEY"
+        const val SETTINGS_CRYPTO_VERSION_PREFERENCE_KEY = "SETTINGS_CRYPTO_VERSION_PREFERENCE_KEY"
         const val SETTINGS_LOGGED_IN_PREFERENCE_KEY = "SETTINGS_LOGGED_IN_PREFERENCE_KEY"
         const val SETTINGS_HOME_SERVER_PREFERENCE_KEY = "SETTINGS_HOME_SERVER_PREFERENCE_KEY"
         const val SETTINGS_IDENTITY_SERVER_PREFERENCE_KEY = "SETTINGS_IDENTITY_SERVER_PREFERENCE_KEY"
         const val SETTINGS_DISCOVERY_PREFERENCE_KEY = "SETTINGS_DISCOVERY_PREFERENCE_KEY"
         const val SETTINGS_EMAILS_AND_PHONE_NUMBERS_PREFERENCE_KEY = "SETTINGS_EMAILS_AND_PHONE_NUMBERS_PREFERENCE_KEY"
+        const val SETTINGS_EXTERNAL_ACCOUNT_MANAGEMENT_KEY = "SETTINGS_EXTERNAL_ACCOUNT_MANAGEMENT_KEY"
 
         const val SETTINGS_CLEAR_CACHE_PREFERENCE_KEY = "SETTINGS_CLEAR_CACHE_PREFERENCE_KEY"
         const val SETTINGS_CLEAR_MEDIA_CACHE_PREFERENCE_KEY = "SETTINGS_CLEAR_MEDIA_CACHE_PREFERENCE_KEY"
@@ -109,6 +109,7 @@ class VectorPreferences @Inject constructor(
         const val SETTINGS_SHOW_URL_PREVIEW_KEY = "SETTINGS_SHOW_URL_PREVIEW_KEY"
         private const val SETTINGS_SEND_TYPING_NOTIF_KEY = "SETTINGS_SEND_TYPING_NOTIF_KEY"
         private const val SETTINGS_ENABLE_MARKDOWN_KEY = "SETTINGS_ENABLE_MARKDOWN_KEY"
+        private const val SETTINGS_ENABLE_RICH_TEXT_FORMATTING_KEY = "SETTINGS_ENABLE_RICH_TEXT_FORMATTING_KEY"
         private const val SETTINGS_ALWAYS_SHOW_TIMESTAMPS_KEY = "SETTINGS_ALWAYS_SHOW_TIMESTAMPS_KEY"
         private const val SETTINGS_12_24_TIMESTAMPS_KEY = "SETTINGS_12_24_TIMESTAMPS_KEY"
         private const val SETTINGS_SHOW_READ_RECEIPTS_KEY = "SETTINGS_SHOW_READ_RECEIPTS_KEY"
@@ -123,6 +124,7 @@ class VectorPreferences @Inject constructor(
         private const val SETTINGS_LABS_ENABLE_LATEX_MATHS = "SETTINGS_LABS_ENABLE_LATEX_MATHS"
         const val SETTINGS_PRESENCE_USER_ALWAYS_APPEARS_OFFLINE = "SETTINGS_PRESENCE_USER_ALWAYS_APPEARS_OFFLINE"
         const val SETTINGS_AUTOPLAY_ANIMATED_IMAGES = "SETTINGS_AUTOPLAY_ANIMATED_IMAGES"
+        private const val SETTINGS_ENABLE_DIRECT_SHARE = "SETTINGS_ENABLE_DIRECT_SHARE"
 
         // Room directory
         private const val SETTINGS_ROOM_DIRECTORY_SHOW_ALL_PUBLIC_ROOMS = "SETTINGS_ROOM_DIRECTORY_SHOW_ALL_PUBLIC_ROOMS"
@@ -184,6 +186,7 @@ class VectorPreferences @Inject constructor(
         const val SETTINGS_PREF_SPACE_CATEGORY = "SETTINGS_PREF_SPACE_CATEGORY"
 
         private const val SETTINGS_DEVELOPER_MODE_PREFERENCE_KEY = "SETTINGS_DEVELOPER_MODE_PREFERENCE_KEY"
+        const val SETTINGS_DEVELOPER_MODE_KEY_REQUEST_AUDIT_KEY = "SETTINGS_DEVELOPER_MODE_KEY_REQUEST_AUDIT_KEY"
         private const val SETTINGS_LABS_SHOW_HIDDEN_EVENTS_PREFERENCE_KEY = "SETTINGS_LABS_SHOW_HIDDEN_EVENTS_PREFERENCE_KEY"
         private const val SETTINGS_LABS_ENABLE_SWIPE_TO_REPLY = "SETTINGS_LABS_ENABLE_SWIPE_TO_REPLY"
         private const val SETTINGS_DEVELOPER_MODE_FAIL_FAST_PREFERENCE_KEY = "SETTINGS_DEVELOPER_MODE_FAIL_FAST_PREFERENCE_KEY"
@@ -208,6 +211,9 @@ class VectorPreferences @Inject constructor(
         private const val SETTINGS_SECURITY_USE_GRACE_PERIOD_FLAG = "SETTINGS_SECURITY_USE_GRACE_PERIOD_FLAG"
         const val SETTINGS_SECURITY_USE_COMPLETE_NOTIFICATIONS_FLAG = "SETTINGS_SECURITY_USE_COMPLETE_NOTIFICATIONS_FLAG"
 
+        // New Session Manager
+        const val SETTINGS_SESSION_MANAGER_SHOW_IP_ADDRESS = "SETTINGS_SESSION_MANAGER_SHOW_IP_ADDRESS"
+
         // other
         const val SETTINGS_MEDIA_SAVING_PERIOD_KEY = "SETTINGS_MEDIA_SAVING_PERIOD_KEY"
         private const val SETTINGS_MEDIA_SAVING_PERIOD_SELECTED_KEY = "SETTINGS_MEDIA_SAVING_PERIOD_SELECTED_KEY"
@@ -223,8 +229,6 @@ class VectorPreferences @Inject constructor(
         private const val MEDIA_SAVING_1_MONTH = 2
         private const val MEDIA_SAVING_FOREVER = 3
 
-        private const val SETTINGS_UNKNOWN_DEVICE_DISMISSED_LIST = "SETTINGS_UNKNWON_DEVICE_DISMISSED_LIST"
-
         private const val TAKE_PHOTO_VIDEO_MODE = "TAKE_PHOTO_VIDEO_MODE"
 
         private const val SETTINGS_LABS_ENABLE_LIVE_LOCATION = "SETTINGS_LABS_ENABLE_LIVE_LOCATION"
@@ -236,16 +240,22 @@ class VectorPreferences @Inject constructor(
 
         // This key will be used to identify clients with the new thread support enabled m.thread
         const val SETTINGS_LABS_ENABLE_THREAD_MESSAGES = "SETTINGS_LABS_ENABLE_THREAD_MESSAGES_FINAL"
+        const val SETTINGS_LABS_THREAD_MESSAGES_CHANGED_BY_USER = "SETTINGS_LABS_THREAD_MESSAGES_CHANGED_BY_USER"
         const val SETTINGS_THREAD_MESSAGES_SYNCED = "SETTINGS_THREAD_MESSAGES_SYNCED"
 
         // This key will be used to enable user for displaying live user info or not.
         const val SETTINGS_TIMELINE_SHOW_LIVE_SENDER_INFO = "SETTINGS_TIMELINE_SHOW_LIVE_SENDER_INFO"
+
+        const val SETTINGS_UNVERIFIED_SESSIONS_ALERT_LAST_SHOWN_MILLIS = "SETTINGS_UNVERIFIED_SESSIONS_ALERT_LAST_SHOWN_MILLIS_"
+        const val SETTINGS_NEW_LOGIN_ALERT_SHOWN_FOR_DEVICE = "SETTINGS_NEW_LOGIN_ALERT_SHOWN_FOR_DEVICE_"
 
         // Possible values for TAKE_PHOTO_VIDEO_MODE
         const val TAKE_PHOTO_VIDEO_MODE_ALWAYS_ASK = 0
         const val TAKE_PHOTO_VIDEO_MODE_PHOTO = 1
         const val TAKE_PHOTO_VIDEO_MODE_VIDEO = 2
 
+        const val HAD_EXISTING_LEGACY_DATA = "HAD_EXISTING_LEGACY_DATA"
+        const val IS_ON_RUST_CRYPTO = "IS_ON_RUST_CRYPTO"
         // Background sync modes
 
         // some preferences keys must be kept after a logout
@@ -324,9 +334,6 @@ class VectorPreferences @Inject constructor(
 
         // theme
         keysToKeep.add(ThemeUtils.APPLICATION_THEME_KEY)
-
-        // Disclaimer dialog
-        keysToKeep.add(SHARED_PREF_KEY)
 
         // get all the existing keys
         val keys = defaultPrefs.all.keys
@@ -514,18 +521,6 @@ class VectorPreferences @Inject constructor(
      */
     fun useShutterSound(): Boolean {
         return defaultPrefs.getBoolean(SETTINGS_PLAY_SHUTTER_SOUND_KEY, true)
-    }
-
-    fun storeUnknownDeviceDismissedList(deviceIds: List<String>) {
-        defaultPrefs.edit(true) {
-            putStringSet(SETTINGS_UNKNOWN_DEVICE_DISMISSED_LIST, deviceIds.toSet())
-        }
-    }
-
-    fun getUnknownDeviceDismissedList(): List<String> {
-        return tryOrNull {
-            defaultPrefs.getStringSet(SETTINGS_UNKNOWN_DEVICE_DISMISSED_LIST, null)?.toList()
-        }.orEmpty()
     }
 
     /**
@@ -758,6 +753,24 @@ class VectorPreferences @Inject constructor(
             putBoolean(SETTINGS_ENABLE_MARKDOWN_KEY, isEnabled)
         }
     }
+
+    /**
+     * Tells if text formatting is enabled within the rich text editor.
+     *
+     * @return true if the text formatting is enabled
+     */
+    fun isTextFormattingEnabled(): Boolean =
+        defaultPrefs.getBoolean(SETTINGS_ENABLE_RICH_TEXT_FORMATTING_KEY, true)
+
+    /**
+     * Update whether text formatting is enabled within the rich text editor.
+     *
+     * @param isEnabled true to enable the text formatting
+     */
+    fun setTextFormattingEnabled(isEnabled: Boolean) =
+        defaultPrefs.edit {
+            putBoolean(SETTINGS_ENABLE_RICH_TEXT_FORMATTING_KEY, isEnabled)
+        }
 
     /**
      * Tells if a confirmation dialog should be displayed before staring a call.
@@ -1004,6 +1017,10 @@ class VectorPreferences @Inject constructor(
         return defaultPrefs.getBoolean(SETTINGS_ENABLE_CHAT_EFFECTS, true)
     }
 
+    fun directShareEnabled(): Boolean {
+        return defaultPrefs.getBoolean(SETTINGS_ENABLE_DIRECT_SHARE, true)
+    }
+
     /**
      * Return true if Pin code is disabled, or if user set the settings to see full notification content.
      */
@@ -1065,6 +1082,12 @@ class VectorPreferences @Inject constructor(
         return defaultPrefs.getBoolean(SETTINGS_LABS_AUTO_REPORT_UISI, false)
     }
 
+    fun setLabsAutoReportUISI(enabled: Boolean) {
+        return defaultPrefs.edit {
+            putBoolean(SETTINGS_LABS_AUTO_REPORT_UISI, enabled)
+        }
+    }
+
     fun prefSpacesShowAllRoomInHome(): Boolean {
         return defaultPrefs.getBoolean(SETTINGS_PREF_SPACE_SHOW_ALL_ROOM_IN_HOME, false)
     }
@@ -1110,6 +1133,24 @@ class VectorPreferences @Inject constructor(
         defaultPrefs
                 .edit()
                 .putBoolean(SETTINGS_LABS_ENABLE_THREAD_MESSAGES, true)
+                .apply()
+    }
+
+    /**
+     * Indicates whether or not user changed threads flag manually. We need this to not force flag to be enabled on app start.
+     * Should be removed when Threads flag will be removed
+     */
+    fun wasThreadFlagChangedManually(): Boolean {
+        return defaultPrefs.getBoolean(SETTINGS_LABS_THREAD_MESSAGES_CHANGED_BY_USER, false)
+    }
+
+    /**
+     * Sets the flag to indicate that user changed threads flag (e.g. disabled them).
+     */
+    fun setThreadFlagChangedManually() {
+        defaultPrefs
+                .edit()
+                .putBoolean(SETTINGS_LABS_THREAD_MESSAGES_CHANGED_BY_USER, true)
                 .apply()
     }
 
@@ -1208,5 +1249,55 @@ class VectorPreferences @Inject constructor(
     fun isVoiceBroadcastEnabled(): Boolean {
         return vectorFeatures.isVoiceBroadcastEnabled() &&
                 defaultPrefs.getBoolean(SETTINGS_LABS_VOICE_BROADCAST_KEY, getDefault(R.bool.settings_labs_enable_voice_broadcast_default))
+    }
+
+    fun showIpAddressInSessionManagerScreens(): Boolean {
+        return defaultPrefs.getBoolean(SETTINGS_SESSION_MANAGER_SHOW_IP_ADDRESS, getDefault(R.bool.settings_session_manager_show_ip_address))
+    }
+
+    fun setIpAddressVisibilityInDeviceManagerScreens(isVisible: Boolean) {
+        defaultPrefs.edit {
+            putBoolean(SETTINGS_SESSION_MANAGER_SHOW_IP_ADDRESS, isVisible)
+        }
+    }
+
+    fun getUnverifiedSessionsAlertLastShownMillis(deviceId: String): Long {
+        return defaultPrefs.getLong(SETTINGS_UNVERIFIED_SESSIONS_ALERT_LAST_SHOWN_MILLIS + deviceId, 0)
+    }
+
+    fun setUnverifiedSessionsAlertLastShownMillis(deviceId: String, lastShownMillis: Long) {
+        defaultPrefs.edit {
+            putLong(SETTINGS_UNVERIFIED_SESSIONS_ALERT_LAST_SHOWN_MILLIS + deviceId, lastShownMillis)
+        }
+    }
+
+    fun isNewLoginAlertShownForDevice(deviceId: String): Boolean {
+        return defaultPrefs.getBoolean(SETTINGS_NEW_LOGIN_ALERT_SHOWN_FOR_DEVICE + deviceId, false)
+    }
+
+    fun setNewLoginAlertShownForDevice(deviceId: String) {
+        defaultPrefs.edit {
+            putBoolean(SETTINGS_NEW_LOGIN_ALERT_SHOWN_FOR_DEVICE + deviceId, true)
+        }
+    }
+
+    fun hadExistingLegacyData(): Boolean {
+        return defaultPrefs.getBoolean(HAD_EXISTING_LEGACY_DATA, false)
+    }
+
+    fun setHadExistingLegacyData(had: Boolean) {
+        defaultPrefs.edit {
+            putBoolean(HAD_EXISTING_LEGACY_DATA, had)
+        }
+    }
+
+    fun isOnRustCrypto(): Boolean {
+        return defaultPrefs.getBoolean(IS_ON_RUST_CRYPTO, false)
+    }
+
+    fun setIsOnRustCrypto(boolean: Boolean) {
+        defaultPrefs.edit {
+            putBoolean(IS_ON_RUST_CRYPTO, boolean)
+        }
     }
 }

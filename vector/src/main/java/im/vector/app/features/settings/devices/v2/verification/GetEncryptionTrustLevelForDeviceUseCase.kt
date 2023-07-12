@@ -25,11 +25,17 @@ class GetEncryptionTrustLevelForDeviceUseCase @Inject constructor(
         private val getEncryptionTrustLevelForOtherDeviceUseCase: GetEncryptionTrustLevelForOtherDeviceUseCase,
 ) {
 
-    fun execute(currentSessionCrossSigningInfo: CurrentSessionCrossSigningInfo, cryptoDeviceInfo: CryptoDeviceInfo?): RoomEncryptionTrustLevel {
+    // XXX why is this using the RoomEncryptionTrustLevel?
+    // should be using a new DeviceTrustShield enum
+    fun execute(currentSessionCrossSigningInfo: CurrentSessionCrossSigningInfo, cryptoDeviceInfo: CryptoDeviceInfo?): RoomEncryptionTrustLevel? {
+        if (cryptoDeviceInfo == null) {
+            return null
+        }
+
         val legacyMode = !currentSessionCrossSigningInfo.isCrossSigningInitialized
         val trustMSK = currentSessionCrossSigningInfo.isCrossSigningVerified
-        val isCurrentDevice = !cryptoDeviceInfo?.deviceId.isNullOrEmpty() && cryptoDeviceInfo?.deviceId == currentSessionCrossSigningInfo.deviceId
-        val deviceTrustLevel = cryptoDeviceInfo?.trustLevel
+        val isCurrentDevice = !cryptoDeviceInfo.deviceId.isNullOrEmpty() && cryptoDeviceInfo.deviceId == currentSessionCrossSigningInfo.deviceId
+        val deviceTrustLevel = cryptoDeviceInfo.trustLevel
 
         return when {
             isCurrentDevice -> getEncryptionTrustLevelForCurrentDeviceUseCase.execute(trustMSK, legacyMode)

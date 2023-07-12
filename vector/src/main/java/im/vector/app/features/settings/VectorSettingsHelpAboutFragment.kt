@@ -69,10 +69,12 @@ class VectorSettingsHelpAboutFragment :
         // application version
         findPreference<VectorPreference>(VectorPreferences.SETTINGS_VERSION_PREFERENCE_KEY)!!.let {
             it.summary = buildString {
-                append(versionProvider.getVersion(longFormat = false, useBuildNumber = true))
+                append(versionProvider.getVersion(longFormat = false))
                 if (buildMeta.isDebug) {
                     append(" ")
                     append(buildMeta.gitBranchName)
+                    append(" ")
+                    append(buildMeta.gitRevision)
                 }
             }
 
@@ -93,8 +95,8 @@ class VectorSettingsHelpAboutFragment :
         }
 
         // olm version
-        findPreference<VectorPreference>(VectorPreferences.SETTINGS_OLM_VERSION_PREFERENCE_KEY)!!
-                .summary = session.cryptoService().getCryptoVersion(requireContext(), false)
+        findPreference<VectorPreference>(VectorPreferences.SETTINGS_CRYPTO_VERSION_PREFERENCE_KEY)!!
+                .summary = session.cryptoService().getCryptoVersion(requireContext(), true)
     }
 
     companion object {

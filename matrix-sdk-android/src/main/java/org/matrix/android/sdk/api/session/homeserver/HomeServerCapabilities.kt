@@ -65,6 +65,26 @@ data class HomeServerCapabilities(
          * True if the home server supports login via qr code, false otherwise.
          */
         val canLoginWithQrCode: Boolean = false,
+
+        /**
+         * True if the home server supports threaded read receipts and unread notifications.
+         */
+        val canUseThreadReadReceiptsAndNotifications: Boolean = false,
+
+        /**
+         * True if the home server supports remote toggle of Pusher for a given device.
+         */
+        val canRemotelyTogglePushNotificationsOfDevices: Boolean = false,
+
+        /**
+         * True if the home server supports redaction of related events.
+         */
+        var canRedactRelatedEvents: Boolean = false,
+
+        /**
+         * External account management url for use with MSC3824 delegated OIDC, provided in Wellknown.
+         */
+        val externalAccountManagementUrl: String? = null,
 ) {
 
     enum class RoomCapabilitySupport {

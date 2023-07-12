@@ -21,6 +21,9 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.kotlin.createObject
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.runBlocking
+import org.matrix.android.sdk.api.session.crypto.CryptoService
+import org.matrix.android.sdk.api.session.events.model.Event
 import org.matrix.android.sdk.api.session.events.model.EventType
 import org.matrix.android.sdk.api.session.room.failure.CreateRoomFailure
 import org.matrix.android.sdk.api.session.room.model.Membership
@@ -29,7 +32,6 @@ import org.matrix.android.sdk.api.session.room.model.create.CreateRoomParams
 import org.matrix.android.sdk.api.session.room.model.localecho.RoomLocalEcho
 import org.matrix.android.sdk.api.session.room.send.SendState
 import org.matrix.android.sdk.api.session.sync.model.RoomSyncSummary
-import org.matrix.android.sdk.internal.crypto.DefaultCryptoService
 import org.matrix.android.sdk.internal.database.awaitNotEmptyResult
 import org.matrix.android.sdk.internal.database.helper.addTimelineEvent
 import org.matrix.android.sdk.internal.database.mapper.asDomain
@@ -64,7 +66,7 @@ internal class DefaultCreateLocalRoomTask @Inject constructor(
         private val roomSummaryUpdater: RoomSummaryUpdater,
         @SessionDatabase private val realmConfiguration: RealmConfiguration,
         private val createRoomBodyBuilder: CreateRoomBodyBuilder,
-        private val cryptoService: DefaultCryptoService,
+        private val cryptoService: CryptoService,
         private val clock: Clock,
         private val createLocalRoomStateEventsTask: CreateLocalRoomStateEventsTask,
 ) : CreateLocalRoomTask {
@@ -72,8 +74,9 @@ internal class DefaultCreateLocalRoomTask @Inject constructor(
     override suspend fun execute(params: CreateRoomParams): String {
         val createRoomBody = createRoomBodyBuilder.build(params)
         val roomId = RoomLocalEcho.createLocalEchoId()
+        val eventList = createLocalRoomStateEventsTask.execute(CreateLocalRoomStateEventsTask.Params(createRoomBody))
         monarchy.awaitTransaction { realm ->
-            createLocalRoomEntity(realm, roomId, createRoomBody)
+            createLocalRoomEntity(realm, roomId, eventList)
             createLocalRoomSummaryEntity(realm, roomId, params, createRoomBody)
         }
 
@@ -95,10 +98,10 @@ internal class DefaultCreateLocalRoomTask @Inject constructor(
      * Create a local room entity from the given room creation params.
      * This will also generate and store in database the chunk and the events related to the room params in order to retrieve and display the local room.
      */
-    private suspend fun createLocalRoomEntity(realm: Realm, roomId: String, createRoomBody: CreateRoomBody) {
+    private fun createLocalRoomEntity(realm: Realm, roomId: String, localStateEventList: List<Event>) {
         RoomEntity.getOrCreate(realm, roomId).apply {
             membership = Membership.JOIN
-            chunks.add(createLocalRoomChunk(realm, roomId, createRoomBody))
+            chunks.add(createLocalRoomChunk(realm, roomId, localStateEventList))
             membersLoadStatus = RoomMembersLoadStatusType.LOADED
         }
     }
@@ -144,20 +147,19 @@ internal class DefaultCreateLocalRoomTask @Inject constructor(
      *
      * @param realm the current instance of realm
      * @param roomId the id of the local room
-     * @param createRoomBody the room creation params
+     * @param localStateEventList list of local state events for that room
      *
      * @return a chunk entity
      */
-    private suspend fun createLocalRoomChunk(realm: Realm, roomId: String, createRoomBody: CreateRoomBody): ChunkEntity {
+    private fun createLocalRoomChunk(realm: Realm, roomId: String, localStateEventList: List<Event>): ChunkEntity {
         val chunkEntity = realm.createObject<ChunkEntity>().apply {
             isLastBackward = true
             isLastForward = true
         }
 
-        val eventList = createLocalRoomStateEventsTask.execute(CreateLocalRoomStateEventsTask.Params(createRoomBody))
         val roomMemberContentsByUser = HashMap<String, RoomMemberContent?>()
 
-        for (event in eventList) {
+        for (event in localStateEventList) {
             if (event.eventId == null || event.senderId == null || event.type == null) {
                 continue
             }
@@ -175,7 +177,9 @@ internal class DefaultCreateLocalRoomTask @Inject constructor(
                 }
 
                 // Give info to crypto module
-                cryptoService.onStateEvent(roomId, event)
+                runBlocking {
+                    cryptoService.onStateEvent(roomId, event, null)
+                }
             }
 
             roomMemberContentsByUser.getOrPut(event.senderId) {

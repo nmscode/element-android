@@ -75,7 +75,9 @@ data class SelectedHomeserverState(
         val upstreamUrl: String? = null,
         val preferredLoginMode: LoginMode = LoginMode.Unknown,
         val supportedLoginTypes: List<String> = emptyList(),
+        val hasOidcCompatibilityFlow: Boolean = false,
         val isLogoutDevicesSupported: Boolean = false,
+        val isLoginWithQrSupported: Boolean = false,
 ) : Parcelable
 
 @Parcelize

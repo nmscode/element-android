@@ -242,6 +242,9 @@ class BugReporter @Inject constructor(
                 activeSessionHolder.getSafeActiveSession()
                         ?.takeIf { !mIsCancelled && withKeyRequestHistory }
                         ?.cryptoService()
+                        ?.takeIf {
+                            it.supportKeyRequestInspection()
+                        }
                         ?.getGossipingEvents()
                         ?.let { GossipingEventsSerializer().serialize(it) }
                         ?.toByteArray()
@@ -261,7 +264,7 @@ class BugReporter @Inject constructor(
 
                 activeSessionHolder.getSafeActiveSession()?.let { session ->
                     userId = session.myUserId
-                    deviceId = session.sessionParams.deviceId ?: "undefined"
+                    deviceId = session.sessionParams.deviceId
                     olmVersion = session.cryptoService().getCryptoVersion(context, true)
                 }
 
@@ -283,7 +286,7 @@ class BugReporter @Inject constructor(
                             .addFormDataPart("user_id", userId)
                             .addFormDataPart("can_contact", canContact.toString())
                             .addFormDataPart("device_id", deviceId)
-                            .addFormDataPart("version", versionProvider.getVersion(longFormat = true, useBuildNumber = false))
+                            .addFormDataPart("version", versionProvider.getVersion(longFormat = true))
                             .addFormDataPart("branch_name", buildMeta.gitBranchName)
                             .addFormDataPart("matrix_sdk_version", Matrix.getSdkVersion())
                             .addFormDataPart("olm_version", olmVersion)
@@ -304,11 +307,6 @@ class BugReporter @Inject constructor(
                                     addFormDataPart(name, value)
                                 }
                             }
-
-                    val buildNumber = buildMeta.buildNumber
-                    if (buildNumber.isNotEmpty() && buildNumber != "0") {
-                        builder.addFormDataPart("build_number", buildNumber)
-                    }
 
                     // add the gzipped files
                     for (file in gzippedFiles) {

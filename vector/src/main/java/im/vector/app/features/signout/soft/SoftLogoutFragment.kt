@@ -33,6 +33,7 @@ import im.vector.app.features.login.AbstractLoginFragment
 import im.vector.app.features.login.LoginAction
 import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.LoginViewEvents
+import org.matrix.android.sdk.api.extensions.orFalse
 import javax.inject.Inject
 
 /**
@@ -66,7 +67,8 @@ class SoftLogoutFragment :
                             LoginAction.SetupSsoForSessionRecovery(
                                     softLogoutViewState.homeServerUrl,
                                     softLogoutViewState.deviceId,
-                                    mode.ssoState.providersOrNull()
+                                    mode.ssoState.providersOrNull(),
+                                    mode.hasOidcCompatibilityFlow
                             )
                     )
                 }
@@ -75,7 +77,8 @@ class SoftLogoutFragment :
                             LoginAction.SetupSsoForSessionRecovery(
                                     softLogoutViewState.homeServerUrl,
                                     softLogoutViewState.deviceId,
-                                    mode.ssoState.providersOrNull()
+                                    mode.ssoState.providersOrNull(),
+                                    mode.hasOidcCompatibilityFlow
                             )
                     )
                 }
@@ -85,7 +88,8 @@ class SoftLogoutFragment :
                             LoginAction.SetupSsoForSessionRecovery(
                                     softLogoutViewState.homeServerUrl,
                                     softLogoutViewState.deviceId,
-                                    null
+                                    null,
+                                    false
                             )
                     )
                 }
@@ -127,7 +131,7 @@ class SoftLogoutFragment :
         withState(softLogoutViewModel) { state ->
             cleanupUi()
 
-            val messageResId = if (state.hasUnsavedKeys) {
+            val messageResId = if (state.hasUnsavedKeys().orFalse()) {
                 R.string.soft_logout_clear_data_dialog_e2e_warning_content
             } else {
                 R.string.soft_logout_clear_data_dialog_content

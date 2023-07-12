@@ -28,7 +28,6 @@ import im.vector.app.espresso.tools.ScreenshotFailureRule
 import im.vector.app.features.MainActivity
 import im.vector.app.getString
 import im.vector.app.ui.robot.ElementRobot
-import im.vector.app.ui.robot.settings.labs.LabFeature
 import im.vector.app.ui.robot.settings.labs.LabFeaturesPreferences
 import im.vector.app.ui.robot.withDeveloperMode
 import org.junit.Rule
@@ -133,7 +132,19 @@ class UiAllScreensSanityTest {
             }
         }
 
+        // Some instability with the bottomsheet
+        // not sure what's the source, maybe the expanded state?
+        Thread.sleep(10_000)
+
         elementRobot.space { selectSpace(spaceName) }
+
+        elementRobot.layoutPreferences {
+            crawl()
+        }
+
+        elementRobot.roomList {
+            crawlTabs()
+        }
 
         elementRobot.withDeveloperMode {
             settings {
@@ -167,7 +178,6 @@ class UiAllScreensSanityTest {
      * Testing multiple threads screens
      */
     private fun testThreadScreens() {
-        elementRobot.toggleLabFeature(LabFeature.THREAD_MESSAGES)
         elementRobot.newRoom {
             createNewRoom {
                 crawl()
@@ -181,6 +191,5 @@ class UiAllScreensSanityTest {
                 }
             }
         }
-        elementRobot.toggleLabFeature(LabFeature.THREAD_MESSAGES)
     }
 }

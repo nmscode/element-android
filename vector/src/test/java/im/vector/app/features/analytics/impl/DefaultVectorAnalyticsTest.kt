@@ -23,7 +23,7 @@ import im.vector.app.test.fakes.FakeAnalyticsStore
 import im.vector.app.test.fakes.FakeLateInitUserPropertiesFactory
 import im.vector.app.test.fakes.FakePostHog
 import im.vector.app.test.fakes.FakePostHogFactory
-import im.vector.app.test.fakes.FakeSentryFactory
+import im.vector.app.test.fakes.FakeSentryAnalytics
 import im.vector.app.test.fixtures.AnalyticsConfigFixture.anAnalyticsConfig
 import im.vector.app.test.fixtures.aUserProperties
 import im.vector.app.test.fixtures.aVectorAnalyticsEvent
@@ -46,11 +46,11 @@ class DefaultVectorAnalyticsTest {
     private val fakePostHog = FakePostHog()
     private val fakeAnalyticsStore = FakeAnalyticsStore()
     private val fakeLateInitUserPropertiesFactory = FakeLateInitUserPropertiesFactory()
-    private val fakeSentryFactory = FakeSentryFactory()
+    private val fakeSentryAnalytics = FakeSentryAnalytics()
 
     private val defaultVectorAnalytics = DefaultVectorAnalytics(
             postHogFactory = FakePostHogFactory(fakePostHog.instance).instance,
-            sentryFactory = fakeSentryFactory.instance,
+            sentryAnalytics = fakeSentryAnalytics.instance,
             analyticsStore = fakeAnalyticsStore.instance,
             globalScope = CoroutineScope(Dispatchers.Unconfined),
             analyticsConfig = anAnalyticsConfig(isEnabled = true),
@@ -75,16 +75,22 @@ class DefaultVectorAnalyticsTest {
 
         fakePostHog.verifyOptOutStatus(optedOut = false)
 
-        fakeSentryFactory.verifySentryInit()
+        fakeSentryAnalytics.verifySentryInit()
     }
 
     @Test
     fun `when revoking consent to analytics then updates posthog opt out to true and closes Sentry`() = runTest {
+        // For opt-out to have effect on Posthog, it has to be used first, so it has to be opt-in first
+        fakeAnalyticsStore.givenUserContent(consent = true)
+        fakePostHog.verifyOptOutStatus(optedOut = false)
+        fakeSentryAnalytics.verifySentryInit()
+
+        // Then test opt-out
         fakeAnalyticsStore.givenUserContent(consent = false)
 
         fakePostHog.verifyOptOutStatus(optedOut = true)
 
-        fakeSentryFactory.verifySentryClose()
+        fakeSentryAnalytics.verifySentryClose()
     }
 
     @Test
@@ -97,6 +103,7 @@ class DefaultVectorAnalyticsTest {
     @Test
     fun `given lateinit user properties when valid analytics id updates then identify with lateinit properties`() = runTest {
         fakeLateInitUserPropertiesFactory.givenCreatesProperties(A_LATE_INIT_USER_PROPERTIES)
+        fakeAnalyticsStore.givenUserContent(true)
 
         fakeAnalyticsStore.givenAnalyticsId(AN_ANALYTICS_ID)
 
@@ -106,12 +113,13 @@ class DefaultVectorAnalyticsTest {
     @Test
     fun `when signing out then resets posthog and closes Sentry`() = runTest {
         fakeAnalyticsStore.allowSettingAnalyticsIdToCallBackingFlow()
+        fakeAnalyticsStore.givenUserContent(true)
 
         defaultVectorAnalytics.onSignOut()
 
         fakePostHog.verifyReset()
 
-        fakeSentryFactory.verifySentryClose()
+        fakeSentryAnalytics.verifySentryClose()
     }
 
     @Test
@@ -148,6 +156,25 @@ class DefaultVectorAnalyticsTest {
         defaultVectorAnalytics.capture(AN_EVENT)
 
         fakePostHog.verifyNoEventTracking()
+    }
+
+    @Test
+    fun `given user has consented, when tracking exception, then submits to sentry`() = runTest {
+        fakeAnalyticsStore.givenUserContent(consent = true)
+        val exception = Exception("test")
+
+        defaultVectorAnalytics.trackError(exception)
+
+        fakeSentryAnalytics.verifySentryTrackError(exception)
+    }
+
+    @Test
+    fun `given user has not consented, when tracking exception, then does not track to sentry`() = runTest {
+        fakeAnalyticsStore.givenUserContent(consent = false)
+
+        defaultVectorAnalytics.trackError(Exception("test"))
+
+        fakeSentryAnalytics.verifyNoErrorTracking()
     }
 }
 

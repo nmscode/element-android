@@ -71,7 +71,7 @@ class SoftLogoutViewModel @AssistedInject constructor(
                         userId = userId,
                         deviceId = session.sessionParams.deviceId.orEmpty(),
                         userDisplayName = session.getUserOrDefault(userId).toMatrixItem().getBestName(),
-                        hasUnsavedKeys = session.hasUnsavedKeys(),
+                        hasUnsavedKeys = Loading(),
                         loginType = session.sessionParams.loginType,
                 )
             } else {
@@ -80,7 +80,7 @@ class SoftLogoutViewModel @AssistedInject constructor(
                         userId = "",
                         deviceId = "",
                         userDisplayName = "",
-                        hasUnsavedKeys = false,
+                        hasUnsavedKeys = Success(false),
                         loginType = LoginType.UNKNOWN,
                 )
             }
@@ -88,8 +88,17 @@ class SoftLogoutViewModel @AssistedInject constructor(
     }
 
     init {
+        checkHasUnsavedKeys()
         // Get the supported login flow
         getSupportedLoginFlow()
+    }
+
+    private fun checkHasUnsavedKeys() {
+        suspend {
+            session.hasUnsavedKeys()
+        }.execute {
+            copy(hasUnsavedKeys = it)
+        }
     }
 
     private fun getSupportedLoginFlow() {
@@ -118,8 +127,11 @@ class SoftLogoutViewModel @AssistedInject constructor(
             val loginMode = when {
                 // SSO login is taken first
                 data.supportedLoginTypes.contains(LoginFlowTypes.SSO) &&
-                        data.supportedLoginTypes.contains(LoginFlowTypes.PASSWORD) -> LoginMode.SsoAndPassword(data.ssoIdentityProviders.toSsoState())
-                data.supportedLoginTypes.contains(LoginFlowTypes.SSO) -> LoginMode.Sso(data.ssoIdentityProviders.toSsoState())
+                        data.supportedLoginTypes.contains(LoginFlowTypes.PASSWORD) -> LoginMode.SsoAndPassword(
+                            data.ssoIdentityProviders.toSsoState(),
+                            data.hasOidcCompatibilityFlow
+                        )
+                data.supportedLoginTypes.contains(LoginFlowTypes.SSO) -> LoginMode.Sso(data.ssoIdentityProviders.toSsoState(), data.hasOidcCompatibilityFlow)
                 data.supportedLoginTypes.contains(LoginFlowTypes.PASSWORD) -> LoginMode.Password
                 else -> LoginMode.Unsupported
             }

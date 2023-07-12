@@ -1,6 +1,6 @@
 // Default configuration copied from https://runningcode.github.io/gradle-doctor/configuration/
 
-def isCiBuild = System.env.BUILDKITE == "true" || System.env.GITHUB_ACTIONS == "true"
+def isCiBuild = System.env.GITHUB_ACTIONS == "true"
 println "Is CI build: $isCiBuild"
 
 doctor {
@@ -42,7 +42,7 @@ doctor {
     /**
      * Warn if using Android Jetifier. It slows down builds.
      */
-    warnWhenJetifierEnabled = true
+    warnWhenJetifierEnabled = false
     /**
      * Negative Avoidance Savings Threshold
      * By default the Gradle Doctor will print out a warning when a task is slower to pull from the cache than to

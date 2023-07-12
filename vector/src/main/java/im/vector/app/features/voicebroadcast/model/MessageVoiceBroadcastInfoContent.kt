@@ -23,7 +23,6 @@ import org.matrix.android.sdk.api.session.events.model.Content
 import org.matrix.android.sdk.api.session.room.model.message.MessageContent
 import org.matrix.android.sdk.api.session.room.model.message.MessageType.MSGTYPE_VOICE_BROADCAST_INFO
 import org.matrix.android.sdk.api.session.room.model.relation.RelationDefaultContent
-import timber.log.Timber
 
 /**
  * Content of the state event of type [VoiceBroadcastConstants.STATE_ROOM_VOICE_BROADCAST_INFO].
@@ -44,12 +43,10 @@ data class MessageVoiceBroadcastInfoContent(
         @Json(name = "state") val voiceBroadcastStateStr: String = "",
         /** The length of the voice chunks in seconds. **/
         @Json(name = "chunk_length") val chunkLength: Int? = null,
+        /** The sequence of the last sent chunk. **/
+        @Json(name = "last_chunk_sequence") val lastChunkSequence: Int? = null,
 ) : MessageContent {
 
     val voiceBroadcastState: VoiceBroadcastState? = VoiceBroadcastState.values()
             .find { it.value == voiceBroadcastStateStr }
-            ?: run {
-                Timber.w("Invalid value for state: `$voiceBroadcastStateStr`")
-                null
-            }
 }

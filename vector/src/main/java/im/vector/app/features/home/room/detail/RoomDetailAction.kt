@@ -20,6 +20,7 @@ import android.net.Uri
 import android.view.View
 import im.vector.app.core.platform.VectorViewModelAction
 import im.vector.app.features.call.conference.ConferenceEvent
+import im.vector.app.features.voicebroadcast.model.VoiceBroadcast
 import org.matrix.android.sdk.api.session.content.ContentAttachmentData
 import org.matrix.android.sdk.api.session.room.model.message.MessageStickerContent
 import org.matrix.android.sdk.api.session.room.model.message.MessageWithAttachmentContent
@@ -38,7 +39,7 @@ sealed class RoomDetailAction : VectorViewModelAction {
     data class UndoReaction(val targetEventId: String, val reaction: String, val reason: String? = "") : RoomDetailAction()
     data class RedactAction(val targetEventId: String, val reason: String? = "") : RoomDetailAction()
     data class UpdateQuickReactAction(val targetEventId: String, val selectedReaction: String, val add: Boolean) : RoomDetailAction()
-    data class NavigateToEvent(val eventId: String, val highlight: Boolean) : RoomDetailAction()
+    data class NavigateToEvent(val eventId: String, val highlight: Boolean, val isFirstUnreadEvent: Boolean = false) : RoomDetailAction()
     object MarkAllAsRead : RoomDetailAction()
     data class DownloadOrOpen(val eventId: String, val senderId: String?, val messageFileContent: MessageWithAttachmentContent) : RoomDetailAction()
     object JoinAndOpenReplacementRoom : RoomDetailAction()
@@ -126,12 +127,14 @@ sealed class RoomDetailAction : VectorViewModelAction {
             object Pause : Recording()
             object Resume : Recording()
             object Stop : Recording()
+            object StopConfirmed : Recording()
         }
 
         sealed class Listening : VoiceBroadcastAction() {
-            data class PlayOrResume(val eventId: String) : Listening()
+            data class PlayOrResume(val voiceBroadcast: VoiceBroadcast) : Listening()
             object Pause : Listening()
             object Stop : Listening()
+            data class SeekTo(val voiceBroadcast: VoiceBroadcast, val positionMillis: Int, val duration: Int) : Listening()
         }
     }
 }

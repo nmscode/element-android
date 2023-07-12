@@ -43,8 +43,9 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import im.vector.app.core.platform.VectorBaseBottomSheetDialogFragment
-import im.vector.app.core.time.DefaultClock
 import im.vector.app.espresso.tools.waitUntilViewVisible
+import im.vector.lib.core.utils.timer.DefaultClock
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.Matcher
 import org.hamcrest.Matchers
 import org.hamcrest.StringDescription
@@ -89,7 +90,7 @@ fun getString(@StringRes id: Int): String {
     return EspressoHelper.getCurrentActivity()!!.resources.getString(id)
 }
 
-fun waitForView(viewMatcher: Matcher<View>, timeout: Long = 10_000, waitForDisplayed: Boolean = true): ViewAction {
+fun waitForView(viewMatcher: Matcher<View>, timeout: Long = 20_000, waitForDisplayed: Boolean = true): ViewAction {
     return object : ViewAction {
         private val clock = DefaultClock()
 
@@ -150,7 +151,7 @@ fun initialSyncIdlingResource(session: Session): IdlingResource {
             this.callback = callback
         }
 
-        override fun onChanged(t: SyncState?) {
+        override fun onChanged(value: SyncState) {
             val isIdle = session.syncService().hasAlreadySynced()
             if (isIdle) {
                 callback?.onTransitionToIdle()
@@ -229,7 +230,7 @@ fun allSecretsKnownIdling(session: Session): IdlingResource {
     val res = object : IdlingResource, Observer<Optional<PrivateKeysInfo>> {
         private var callback: IdlingResource.ResourceCallback? = null
 
-        var privateKeysInfo: PrivateKeysInfo? = session.cryptoService().crossSigningService().getCrossSigningPrivateKeys()
+        var privateKeysInfo: PrivateKeysInfo? = null
         override fun getName() = "AllSecretsKnownIdling_${session.myUserId}"
 
         override fun isIdleNow(): Boolean {
@@ -241,14 +242,18 @@ fun allSecretsKnownIdling(session: Session): IdlingResource {
             this.callback = callback
         }
 
-        override fun onChanged(t: Optional<PrivateKeysInfo>?) {
-            println("*** [$name]  allSecretsKnownIdling ${t?.getOrNull()}")
-            privateKeysInfo = t?.getOrNull()
-            if (t?.getOrNull()?.allKnown() == true) {
+        override fun onChanged(value: Optional<PrivateKeysInfo>) {
+            println("*** [$name]  allSecretsKnownIdling ${value.getOrNull()}")
+            privateKeysInfo = value.getOrNull()
+            if (value.getOrNull()?.allKnown() == true) {
                 session.cryptoService().crossSigningService().getLiveCrossSigningPrivateKeys().removeObserver(this)
                 callback?.onTransitionToIdle()
             }
         }
+    }
+
+    res.privateKeysInfo = runBlocking {
+        session.cryptoService().crossSigningService().getCrossSigningPrivateKeys()
     }
 
     runOnUiThread {

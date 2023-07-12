@@ -31,6 +31,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import com.airbnb.mvrx.Mavericks
 import com.airbnb.mvrx.viewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -44,8 +45,6 @@ import im.vector.app.core.extensions.restart
 import im.vector.app.core.extensions.validateBackPressed
 import im.vector.app.core.platform.VectorBaseActivity
 import im.vector.app.core.platform.VectorMenuProvider
-import im.vector.app.core.pushers.FcmHelper
-import im.vector.app.core.pushers.PushersManager
 import im.vector.app.core.pushers.UnifiedPushHelper
 import im.vector.app.core.utils.registerForPermissionsResult
 import im.vector.app.core.utils.startSharePlainTextIntent
@@ -56,7 +55,6 @@ import im.vector.app.features.analytics.accountdata.AnalyticsAccountDataViewMode
 import im.vector.app.features.analytics.plan.MobileScreen
 import im.vector.app.features.analytics.plan.ViewRoom
 import im.vector.app.features.crypto.recover.SetupMode
-import im.vector.app.features.disclaimer.DisclaimerDialog
 import im.vector.app.features.home.room.list.actions.RoomListSharedAction
 import im.vector.app.features.home.room.list.actions.RoomListSharedActionViewModel
 import im.vector.app.features.home.room.list.home.layout.HomeLayoutSettingBottomDialogFragment
@@ -76,6 +74,7 @@ import im.vector.app.features.popup.PopupAlertManager
 import im.vector.app.features.popup.VerificationVectorAlert
 import im.vector.app.features.rageshake.ReportType
 import im.vector.app.features.rageshake.VectorUncaughtExceptionHandler
+import im.vector.app.features.session.coroutineScope
 import im.vector.app.features.settings.VectorSettingsActivity
 import im.vector.app.features.spaces.SpaceCreationActivity
 import im.vector.app.features.spaces.SpacePreviewActivity
@@ -86,9 +85,11 @@ import im.vector.app.features.themes.ThemeUtils
 import im.vector.app.features.usercode.UserCodeActivity
 import im.vector.app.features.workers.signout.ServerBackupStatusViewModel
 import im.vector.lib.core.utils.compat.getParcelableExtraCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import org.matrix.android.sdk.api.session.permalinks.PermalinkService
 import org.matrix.android.sdk.api.session.sync.InitialSyncStrategy
@@ -128,7 +129,6 @@ class HomeActivity :
     private val serverBackupStatusViewModel: ServerBackupStatusViewModel by viewModel()
 
     @Inject lateinit var vectorUncaughtExceptionHandler: VectorUncaughtExceptionHandler
-    @Inject lateinit var pushersManager: PushersManager
     @Inject lateinit var notificationDrawerManager: NotificationDrawerManager
     @Inject lateinit var popupAlertManager: PopupAlertManager
     @Inject lateinit var shortcutsHandler: ShortcutsHandler
@@ -137,9 +137,7 @@ class HomeActivity :
     @Inject lateinit var initSyncStepFormatter: InitSyncStepFormatter
     @Inject lateinit var spaceStateHandler: SpaceStateHandler
     @Inject lateinit var unifiedPushHelper: UnifiedPushHelper
-    @Inject lateinit var fcmHelper: FcmHelper
     @Inject lateinit var nightlyProxy: NightlyProxy
-    @Inject lateinit var disclaimerDialog: DisclaimerDialog
     @Inject lateinit var notificationPermissionManager: NotificationPermissionManager
 
     private var isNewAppLayoutEnabled: Boolean = false // delete once old app layout is removed
@@ -209,16 +207,6 @@ class HomeActivity :
         isNewAppLayoutEnabled = vectorPreferences.isNewAppLayoutEnabled()
         analyticsScreenName = MobileScreen.ScreenName.Home
         supportFragmentManager.registerFragmentLifecycleCallbacks(fragmentLifecycleCallbacks, false)
-        unifiedPushHelper.register(this) {
-            if (unifiedPushHelper.isEmbeddedDistributor()) {
-                fcmHelper.ensureFcmTokenIsRetrieved(
-                        this,
-                        pushersManager,
-                        homeActivityViewModel.shouldAddHttpPusher()
-                )
-            }
-        }
-
         sharedActionViewModel = viewModelProvider[HomeSharedActionViewModel::class.java]
         roomListSharedActionViewModel = viewModelProvider[RoomListSharedActionViewModel::class.java]
         views.drawerLayout.addDrawerListener(drawerListener)
@@ -268,11 +256,7 @@ class HomeActivity :
                 HomeActivityViewEvents.PromptToEnableSessionPush -> handlePromptToEnablePush()
                 HomeActivityViewEvents.StartRecoverySetupFlow -> handleStartRecoverySetup()
                 is HomeActivityViewEvents.ForceVerification -> {
-                    if (it.sendRequest) {
-                        navigator.requestSelfSessionVerification(this)
-                    } else {
-                        navigator.waitSessionVerification(this)
-                    }
+                    navigator.requestSelfSessionVerification(this)
                 }
                 is HomeActivityViewEvents.OnCrossSignedInvalidated -> handleCrossSigningInvalidated(it)
                 HomeActivityViewEvents.ShowAnalyticsOptIn -> handleShowAnalyticsOptIn()
@@ -280,6 +264,7 @@ class HomeActivity :
                 HomeActivityViewEvents.ShowReleaseNotes -> handleShowReleaseNotes()
                 HomeActivityViewEvents.NotifyUserForThreadsMigration -> handleNotifyUserForThreadsMigration()
                 is HomeActivityViewEvents.MigrateThreads -> migrateThreadsIfNeeded(it.checkSession)
+                is HomeActivityViewEvents.AskUserForPushDistributor -> askUserToSelectPushDistributor()
             }
         }
         homeActivityViewModel.onEach { renderState(it) }
@@ -290,6 +275,12 @@ class HomeActivity :
             handleIntent(intent)
         }
         homeActivityViewModel.handle(HomeActivityViewActions.ViewStarted)
+    }
+
+    private fun askUserToSelectPushDistributor() {
+        unifiedPushHelper.showSelectDistributorDialog(this) { selection ->
+            homeActivityViewModel.handle(HomeActivityViewActions.RegisterPushDistributor(selection))
+        }
     }
 
     private fun handleShowNotificationDialog() {
@@ -409,20 +400,14 @@ class HomeActivity :
 
     private fun handleStartRecoverySetup() {
         // To avoid IllegalStateException in case the transaction was executed after onSaveInstanceState
-        lifecycleScope.launchWhenResumed {
-            navigator.open4SSetup(this@HomeActivity, SetupMode.NORMAL)
+        lifecycleScope.launch {
+            withResumed {
+                navigator.open4SSetup(this@HomeActivity, SetupMode.NORMAL)
+            }
         }
     }
 
     private fun renderState(state: HomeActivityViewState) {
-        lifecycleScope.launch {
-            if (state.areNotificationsSilenced) {
-                unifiedPushHelper.unregister(pushersManager)
-            } else {
-                unifiedPushHelper.register(this@HomeActivity)
-            }
-        }
-
         when (val status = state.syncRequestState) {
             is SyncRequestState.InitialSyncProgressing -> {
                 val initSyncStepStr = initSyncStepFormatter.format(status.initialSyncStep)
@@ -452,9 +437,10 @@ class HomeActivity :
     private fun handleAskPasswordToInitCrossSigning(events: HomeActivityViewEvents.AskPasswordToInitCrossSigning) {
         // We need to ask
         promptSecurityEvent(
-                events.userItem,
-                R.string.upgrade_security,
-                R.string.security_prompt_text
+                uid = PopupAlertManager.UPGRADE_SECURITY_UID,
+                userItem = events.userItem,
+                titleRes = R.string.upgrade_security,
+                descRes = R.string.security_prompt_text,
         ) {
             it.navigator.upgradeSessionSecurity(it, true)
         }
@@ -463,35 +449,53 @@ class HomeActivity :
     private fun handleCrossSigningInvalidated(event: HomeActivityViewEvents.OnCrossSignedInvalidated) {
         // We need to ask
         promptSecurityEvent(
-                event.userItem,
-                R.string.crosssigning_verify_this_session,
-                R.string.confirm_your_identity
+                uid = PopupAlertManager.VERIFY_SESSION_UID,
+                userItem = event.userItem,
+                titleRes = R.string.crosssigning_verify_this_session,
+                descRes = R.string.confirm_your_identity,
         ) {
-            it.navigator.waitSessionVerification(it)
+            // check first if it's not an outdated request?
+            activeSessionHolder.getSafeActiveSession()?.let { session ->
+                session.coroutineScope.launch {
+                    if (!session.cryptoService().crossSigningService().isCrossSigningVerified()) {
+                        withContext(Dispatchers.Main) {
+                            it.navigator.requestSelfSessionVerification(it)
+                        }
+                    }
+                }
+            }
         }
     }
 
     private fun handleOnNewSession(event: HomeActivityViewEvents.CurrentSessionNotVerified) {
         // We need to ask
+        val titleRes = if (event.afterMigration) {
+            R.string.crosssigning_verify_after_update
+        } else {
+            R.string.crosssigning_verify_this_session
+        }
+        val descRes = if (event.afterMigration) {
+            R.string.confirm_your_identity_after_update
+        } else {
+            R.string.confirm_your_identity
+        }
         promptSecurityEvent(
-                event.userItem,
-                R.string.crosssigning_verify_this_session,
-                R.string.confirm_your_identity
+                uid = PopupAlertManager.VERIFY_SESSION_UID,
+                userItem = event.userItem,
+                titleRes = titleRes,
+                descRes = descRes,
         ) {
-            if (event.waitForIncomingRequest) {
-                it.navigator.waitSessionVerification(it)
-            } else {
-                it.navigator.requestSelfSessionVerification(it)
-            }
+            it.navigator.requestSelfSessionVerification(it)
         }
     }
 
     private fun handleCantVerify(event: HomeActivityViewEvents.CurrentSessionCannotBeVerified) {
         // We need to ask
         promptSecurityEvent(
-                event.userItem,
-                R.string.crosssigning_cannot_verify_this_session,
-                R.string.crosssigning_cannot_verify_this_session_desc
+                uid = PopupAlertManager.UPGRADE_SECURITY_UID,
+                userItem = event.userItem,
+                titleRes = R.string.crosssigning_cannot_verify_this_session,
+                descRes = R.string.crosssigning_cannot_verify_this_session_desc,
         ) {
             it.navigator.open4SSetup(it, SetupMode.PASSPHRASE_AND_NEEDED_SECRETS_RESET)
         }
@@ -500,7 +504,7 @@ class HomeActivity :
     private fun handlePromptToEnablePush() {
         popupAlertManager.postVectorAlert(
                 DefaultVectorAlert(
-                        uid = "enablePush",
+                        uid = PopupAlertManager.ENABLE_PUSH_UID,
                         title = getString(R.string.alert_push_are_disabled_title),
                         description = getString(R.string.alert_push_are_disabled_description),
                         iconId = R.drawable.ic_room_actions_notifications_mutes,
@@ -533,10 +537,16 @@ class HomeActivity :
         )
     }
 
-    private fun promptSecurityEvent(userItem: MatrixItem.UserItem, titleRes: Int, descRes: Int, action: ((VectorBaseActivity<*>) -> Unit)) {
+    private fun promptSecurityEvent(
+            uid: String,
+            userItem: MatrixItem.UserItem,
+            titleRes: Int,
+            descRes: Int,
+            action: ((VectorBaseActivity<*>) -> Unit),
+    ) {
         popupAlertManager.postVectorAlert(
                 VerificationVectorAlert(
-                        uid = "upgradeSecurity",
+                        uid = uid,
                         title = getString(titleRes),
                         description = getString(descRes),
                         iconId = R.drawable.ic_shield_warning
@@ -587,15 +597,15 @@ class HomeActivity :
                     .setPositiveButton(R.string.yes) { _, _ -> bugReporter.openBugReportScreen(this) }
                     .setNegativeButton(R.string.no) { _, _ -> bugReporter.deleteCrashFile() }
                     .show()
-        } else {
-            disclaimerDialog.showDisclaimerDialog(this)
         }
 
         // Force remote backup state update to update the banner if needed
         serverBackupStatusViewModel.refreshRemoteStateIfNeeded()
 
         // Check nightly
-        nightlyProxy.onHomeResumed()
+        if (nightlyProxy.canDisplayPopup()) {
+            nightlyProxy.updateApplication()
+        }
 
         checkNewAppLayoutFlagChange()
     }

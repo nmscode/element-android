@@ -43,6 +43,21 @@ internal data class LoginFlow(
          * See MSC #2858
          */
         @Json(name = "identity_providers")
-        val ssoIdentityProvider: List<SsoIdentityProvider>? = null
+        val ssoIdentityProvider: List<SsoIdentityProvider>? = null,
 
+        /**
+         * Whether this login flow is preferred for OIDC-aware clients.
+         *
+         * See [MSC3824](https://github.com/matrix-org/matrix-spec-proposals/pull/3824)
+         */
+        @Json(name = "org.matrix.msc3824.delegated_oidc_compatibility")
+        val delegatedOidcCompatibilty: Boolean? = null,
+
+        /**
+         * Whether a login flow of type m.login.token could accept a token issued using /login/get_token.
+         *
+         * See https://spec.matrix.org/v1.7/client-server-api/#post_matrixclientv1loginget_token
+         */
+        @Json(name = "get_login_token")
+        val getLoginToken: Boolean? = null
 )

@@ -70,6 +70,7 @@ import org.matrix.android.sdk.api.util.TextContent
 import org.matrix.android.sdk.internal.di.UserId
 import org.matrix.android.sdk.internal.session.content.ThumbnailExtractor
 import org.matrix.android.sdk.internal.session.permalinks.PermalinkFactory
+import org.matrix.android.sdk.internal.session.room.send.model.EventRedactBody
 import org.matrix.android.sdk.internal.session.room.send.pills.TextPillsUtils
 import org.matrix.android.sdk.internal.util.time.Clock
 import java.util.UUID
@@ -181,7 +182,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 originServerTs = dummyOriginServerTs(),
                 senderId = userId,
                 eventId = localId,
-                type = EventType.POLL_START.first(),
+                type = EventType.POLL_START.unstable,
                 content = newContent.toContent().plus(additionalContent.orEmpty())
         )
     }
@@ -206,7 +207,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 originServerTs = dummyOriginServerTs(),
                 senderId = userId,
                 eventId = localId,
-                type = EventType.POLL_RESPONSE.first(),
+                type = EventType.POLL_RESPONSE.unstable,
                 content = content.toContent().plus(additionalContent.orEmpty()),
                 unsignedData = UnsignedData(age = null, transactionId = localId)
         )
@@ -226,7 +227,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 originServerTs = dummyOriginServerTs(),
                 senderId = userId,
                 eventId = localId,
-                type = EventType.POLL_START.first(),
+                type = EventType.POLL_START.unstable,
                 content = content.toContent().plus(additionalContent.orEmpty()),
                 unsignedData = UnsignedData(age = null, transactionId = localId)
         )
@@ -241,7 +242,8 @@ internal class LocalEchoEventFactory @Inject constructor(
                 relatesTo = RelationDefaultContent(
                         type = RelationType.REFERENCE,
                         eventId = eventId
-                )
+                ),
+                unstableText = "Ended poll",
         )
         val localId = LocalEcho.createLocalEchoId()
         return Event(
@@ -249,7 +251,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 originServerTs = dummyOriginServerTs(),
                 senderId = userId,
                 eventId = localId,
-                type = EventType.POLL_END.first(),
+                type = EventType.POLL_END.unstable,
                 content = content.toContent().plus(additionalContent.orEmpty()),
                 unsignedData = UnsignedData(age = null, transactionId = localId)
         )
@@ -300,7 +302,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 originServerTs = dummyOriginServerTs(),
                 senderId = userId,
                 eventId = localId,
-                type = EventType.BEACON_LOCATION_DATA.first(),
+                type = EventType.BEACON_LOCATION_DATA.unstable,
                 content = content.toContent().plus(additionalContent.orEmpty()),
                 unsignedData = UnsignedData(age = null, transactionId = localId)
         )
@@ -319,7 +321,7 @@ internal class LocalEchoEventFactory @Inject constructor(
         val permalink = permalinkFactory.createPermalink(roomId, originalEvent.root.eventId ?: "", false)
         val userLink = originalEvent.root.senderId?.let { permalinkFactory.createPermalink(it, false) } ?: ""
 
-        val body = bodyForReply(originalEvent.getLastMessageContent(), originalEvent.isReply())
+        val body = bodyForReply(timelineEvent = originalEvent)
         // As we always supply formatted body for replies we should force the MarkdownParser to produce html.
         val newBodyFormatted = markdownParser.parse(newBodyText, force = true, advanced = autoMarkdown).takeFormatted()
         // Body of the original message may not have formatted version, so may also have to convert to html.
@@ -597,26 +599,22 @@ internal class LocalEchoEventFactory @Inject constructor(
         return clock.epochMillis()
     }
 
-    /**
-     * Creates a reply to a regular timeline Event or a thread Event if needed.
-     */
-    fun createReplyTextEvent(
-            roomId: String,
+    fun createReplyTextContent(
             eventReplied: TimelineEvent,
             replyText: CharSequence,
             replyTextFormatted: CharSequence?,
             autoMarkdown: Boolean,
             rootThreadEventId: String? = null,
             showInThread: Boolean,
-            additionalContent: Content? = null
-    ): Event? {
+            isRedactedEvent: Boolean = false
+    ): MessageContent? {
         // Fallbacks and event representation
         // TODO Add error/warning logs when any of this is null
         val permalink = permalinkFactory.createPermalink(eventReplied.root, false) ?: return null
         val userId = eventReplied.root.senderId ?: return null
         val userLink = permalinkFactory.createPermalink(userId, false) ?: return null
 
-        val body = bodyForReply(eventReplied.getLastMessageContent(), eventReplied.isReply())
+        val body = bodyForReply(timelineEvent = eventReplied, isRedactedEvent = isRedactedEvent)
 
         // As we always supply formatted body for replies we should force the MarkdownParser to produce html.
         val finalReplyTextFormatted = replyTextFormatted?.toString() ?: markdownParser.parse(replyText, force = true, advanced = autoMarkdown).takeFormatted()
@@ -635,7 +633,7 @@ internal class LocalEchoEventFactory @Inject constructor(
         val replyFallback = buildReplyFallback(body, userId, replyText.toString())
 
         val eventId = eventReplied.root.eventId ?: return null
-        val content = MessageTextContent(
+        return MessageTextContent(
                 msgType = MessageType.MSGTYPE_TEXT,
                 format = MessageFormat.FORMAT_MATRIX_HTML,
                 body = replyFallback,
@@ -646,7 +644,25 @@ internal class LocalEchoEventFactory @Inject constructor(
                         showInThread = showInThread
                 )
         )
-        return createMessageEvent(roomId, content, additionalContent)
+    }
+
+    /**
+     * Creates a reply to a regular timeline Event or a thread Event if needed.
+     */
+    fun createReplyTextEvent(
+            roomId: String,
+            eventReplied: TimelineEvent,
+            replyText: CharSequence,
+            replyTextFormatted: CharSequence?,
+            autoMarkdown: Boolean,
+            rootThreadEventId: String? = null,
+            showInThread: Boolean,
+            additionalContent: Content? = null,
+    ): Event? {
+        val content = createReplyTextContent(eventReplied, replyText, replyTextFormatted, autoMarkdown, rootThreadEventId, showInThread)
+        return content?.let {
+            createMessageEvent(roomId, it, additionalContent)
+        }
     }
 
     private fun generateThreadRelationContent(rootThreadEventId: String) =
@@ -710,12 +726,26 @@ internal class LocalEchoEventFactory @Inject constructor(
         }
     }
 
+    private fun bodyForReply(timelineEvent: TimelineEvent, isRedactedEvent: Boolean = false): TextContent {
+        val content = when (timelineEvent.root.getClearType()) {
+            in EventType.POLL_END.values -> {
+                // for end poll event, we use the content of the start poll event
+                localEchoRepository
+                        .getRelatedPollEvent(timelineEvent)
+                        ?.getLastMessageContent()
+                        ?: timelineEvent.getLastMessageContent()
+            }
+            else -> timelineEvent.getLastMessageContent()
+        }
+        return bodyForReply(content = content, isReply = timelineEvent.isReply(), isRedactedEvent = isRedactedEvent)
+    }
+
     /**
      * Returns a TextContent used for the fallback event representation in a reply message.
      * In case of an edit of a reply the last content is not
      * himself a reply, but it will contain the fallbacks, so we have to trim them.
      */
-    private fun bodyForReply(content: MessageContent?, isReply: Boolean): TextContent {
+    fun bodyForReply(content: MessageContent?, isReply: Boolean, isRedactedEvent: Boolean = false): TextContent {
         when (content?.msgType) {
             MessageType.MSGTYPE_EMOTE,
             MessageType.MSGTYPE_TEXT,
@@ -724,7 +754,9 @@ internal class LocalEchoEventFactory @Inject constructor(
                 if (content is MessageContentWithFormattedBody) {
                     formattedText = content.matrixFormattedBody
                 }
-                return if (isReply) {
+                return if (isRedactedEvent) {
+                    TextContent("message removed.")
+                } else if (isReply) {
                     TextContent(content.body, formattedText).removeInReplyFallbacks()
                 } else {
                     TextContent(content.body, formattedText)
@@ -738,7 +770,12 @@ internal class LocalEchoEventFactory @Inject constructor(
             MessageType.MSGTYPE_POLL_START -> {
                 return TextContent((content as? MessagePollContent)?.getBestPollCreationInfo()?.question?.getBestQuestion() ?: "")
             }
-            else -> return TextContent(content?.body ?: "")
+            MessageType.MSGTYPE_POLL_END -> return TextContent("Ended poll")
+            else -> {
+                return if (isRedactedEvent) {
+                    TextContent("message removed.")
+                } else TextContent(content?.body ?: "")
+            }
         }
     }
 
@@ -775,8 +812,16 @@ internal class LocalEchoEventFactory @Inject constructor(
         }
     }
      */
-    fun createRedactEvent(roomId: String, eventId: String, reason: String?, additionalContent: Content? = null): Event {
+    fun createRedactEvent(roomId: String, eventId: String, reason: String?, withRelTypes: List<String>? = null, additionalContent: Content? = null): Event {
         val localId = LocalEcho.createLocalEchoId()
+        val content = if (reason != null || withRelTypes != null) {
+            EventRedactBody(
+                    reason = reason,
+                    unstableWithRelTypes = withRelTypes,
+            ).toContent().plus(additionalContent.orEmpty())
+        } else {
+            additionalContent
+        }
         return Event(
                 roomId = roomId,
                 originServerTs = dummyOriginServerTs(),
@@ -784,7 +829,7 @@ internal class LocalEchoEventFactory @Inject constructor(
                 eventId = localId,
                 type = EventType.REDACTION,
                 redacts = eventId,
-                content = reason?.let { mapOf("reason" to it).toContent().plus(additionalContent.orEmpty()) } ?: additionalContent,
+                content = content,
                 unsignedData = UnsignedData(age = null, transactionId = localId)
         )
     }
@@ -804,54 +849,69 @@ internal class LocalEchoEventFactory @Inject constructor(
             additionalContent: Content? = null,
     ): Event {
         val messageContent = quotedEvent.getLastMessageContent()
-        val textMsg = if (messageContent is MessageContentWithFormattedBody) {
-            messageContent.formattedBody
-        } else {
-            messageContent?.body
-        }
-        val quoteText = legacyRiotQuoteText(textMsg, text)
-        val quoteFormattedText = "<blockquote>$textMsg</blockquote>$formattedText"
-
+        val formattedQuotedText = (messageContent as? MessageContentWithFormattedBody)?.formattedBody
+        val textContent = createQuoteTextContent(messageContent?.body, formattedQuotedText, text, formattedText, autoMarkdown)
         return if (rootThreadEventId != null) {
             createMessageEvent(
                     roomId,
-                    markdownParser
-                            .parse(quoteText, force = true, advanced = autoMarkdown).copy(formattedText = quoteFormattedText)
-                            .toThreadTextContent(
-                                    rootThreadEventId = rootThreadEventId,
-                                    latestThreadEventId = localEchoRepository.getLatestThreadEvent(rootThreadEventId),
-                                    msgType = MessageType.MSGTYPE_TEXT
-                            ),
+                    textContent.toThreadTextContent(
+                            rootThreadEventId = rootThreadEventId,
+                            latestThreadEventId = localEchoRepository.getLatestThreadEvent(rootThreadEventId),
+                            msgType = MessageType.MSGTYPE_TEXT
+                    ),
                     additionalContent,
             )
         } else {
             createFormattedTextEvent(
                     roomId,
-                    markdownParser.parse(quoteText, force = true, advanced = autoMarkdown).copy(formattedText = quoteFormattedText),
+                    textContent,
                     MessageType.MSGTYPE_TEXT,
                     additionalContent,
             )
         }
     }
 
-    private fun legacyRiotQuoteText(quotedText: String?, myText: String): String {
-        val messageParagraphs = quotedText?.split("\n\n".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        return buildString {
-            if (messageParagraphs != null) {
-                for (i in messageParagraphs.indices) {
-                    if (messageParagraphs[i].isNotBlank()) {
-                        append("> ")
-                        append(messageParagraphs[i])
-                    }
+    private fun createQuoteTextContent(
+            quotedText: String?,
+            formattedQuotedText: String?,
+            text: String,
+            formattedText: String?,
+            autoMarkdown: Boolean
+    ): TextContent {
+        val currentFormattedText = formattedText ?: if (autoMarkdown) {
+            val parsed = markdownParser.parse(text, force = true, advanced = true)
+            // If formattedText == text, formattedText is returned as null
+            parsed.formattedText ?: parsed.text
+        } else {
+            text
+        }
+        val processedFormattedQuotedText = formattedQuotedText ?: quotedText
 
-                    if (i != messageParagraphs.lastIndex) {
-                        append("\n\n")
-                    }
+        val plainTextBody = buildString {
+            val plainMessageParagraphs = quotedText?.split("\n\n".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray().orEmpty()
+            plainMessageParagraphs.forEachIndexed { index, paragraph ->
+                if (paragraph.isNotBlank()) {
+                    append("> ")
+                    append(paragraph)
+                }
+
+                if (index != plainMessageParagraphs.lastIndex) {
+                    append("\n\n")
                 }
             }
             append("\n\n")
-            append(myText)
+            append(text)
         }
+        val formattedTextBody = buildString {
+            if (!processedFormattedQuotedText.isNullOrBlank()) {
+                append("<blockquote>")
+                append(processedFormattedQuotedText)
+                append("</blockquote>")
+            }
+            append("<br/>")
+            append(currentFormattedText)
+        }
+        return TextContent(plainTextBody, formattedTextBody)
     }
 
     companion object {

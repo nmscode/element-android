@@ -25,6 +25,9 @@ import org.matrix.android.sdk.api.session.homeserver.HomeServerCapabilities
 import org.matrix.android.sdk.internal.auth.version.Versions
 import org.matrix.android.sdk.internal.auth.version.doesServerSupportLogoutDevices
 import org.matrix.android.sdk.internal.auth.version.doesServerSupportQrCodeLogin
+import org.matrix.android.sdk.internal.auth.version.doesServerSupportRedactionOfRelatedEvents
+import org.matrix.android.sdk.internal.auth.version.doesServerSupportRemoteToggleOfPushNotifications
+import org.matrix.android.sdk.internal.auth.version.doesServerSupportThreadUnreadNotifications
 import org.matrix.android.sdk.internal.auth.version.doesServerSupportThreads
 import org.matrix.android.sdk.internal.auth.version.isLoginAndRegistrationSupportedBySdk
 import org.matrix.android.sdk.internal.database.model.HomeServerCapabilitiesEntity
@@ -140,11 +143,18 @@ internal class DefaultGetHomeServerCapabilitiesTask @Inject constructor(
             }
 
             if (getVersionResult != null) {
-                homeServerCapabilitiesEntity.lastVersionIdentityServerSupported = getVersionResult.isLoginAndRegistrationSupportedBySdk()
-                homeServerCapabilitiesEntity.canControlLogoutDevices = getVersionResult.doesServerSupportLogoutDevices()
+                homeServerCapabilitiesEntity.lastVersionIdentityServerSupported =
+                        getVersionResult.isLoginAndRegistrationSupportedBySdk()
+                homeServerCapabilitiesEntity.canControlLogoutDevices =
+                        getVersionResult.doesServerSupportLogoutDevices()
                 homeServerCapabilitiesEntity.canUseThreading = /* capabilities?.threads?.enabled.orFalse() || */
                         getVersionResult.doesServerSupportThreads()
-                homeServerCapabilitiesEntity.canLoginWithQrCode = getVersionResult.doesServerSupportQrCodeLogin()
+                homeServerCapabilitiesEntity.canUseThreadReadReceiptsAndNotifications =
+                        getVersionResult.doesServerSupportThreadUnreadNotifications()
+                homeServerCapabilitiesEntity.canRemotelyTogglePushNotificationsOfDevices =
+                        getVersionResult.doesServerSupportRemoteToggleOfPushNotifications()
+                homeServerCapabilitiesEntity.canRedactEventWithRelations =
+                        getVersionResult.doesServerSupportRedactionOfRelatedEvents()
             }
 
             if (getWellknownResult != null && getWellknownResult is WellknownResult.Prompt) {
@@ -155,9 +165,25 @@ internal class DefaultGetHomeServerCapabilitiesTask @Inject constructor(
                     Timber.v("Extracted integration config : $config")
                     realm.insertOrUpdate(config)
                 }
+                homeServerCapabilitiesEntity.externalAccountManagementUrl = getWellknownResult.wellKnown.unstableDelegatedAuthConfig?.accountManagementUrl
             }
+
+            homeServerCapabilitiesEntity.canLoginWithQrCode = canLoginWithQrCode(getCapabilitiesResult, getVersionResult)
+
             homeServerCapabilitiesEntity.lastUpdatedTimestamp = Date().time
         }
+    }
+
+    private fun canLoginWithQrCode(getCapabilitiesResult: GetCapabilitiesResult?, getVersionResult: Versions?): Boolean {
+        // in r0 of MSC3882 an unstable feature was exposed. In stable it is done via /capabilities and /login
+
+        // in stable 1.7 a capability is exposed for the authenticated user
+        if (getCapabilitiesResult?.capabilities?.getLoginToken != null) {
+            return getCapabilitiesResult.capabilities.getLoginToken.enabled == true
+        }
+
+        @Suppress("DEPRECATION")
+        return getVersionResult?.doesServerSupportQrCodeLogin() == true
     }
 
     companion object {

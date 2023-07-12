@@ -44,7 +44,7 @@ interface AuthenticationService {
     /**
      * Get a SSO url.
      */
-    fun getSsoUrl(redirectUrl: String, deviceId: String?, providerId: String?): String?
+    fun getSsoUrl(redirectUrl: String, deviceId: String?, providerId: String?, action: SSOAction): String?
 
     /**
      * Get the sign in or sign up fallback URL.
@@ -124,12 +124,6 @@ interface AuthenticationService {
             initialDeviceName: String,
             deviceId: String? = null
     ): Session
-
-    /**
-     * @param homeServerConnectionConfig the information about the homeserver and other configuration
-     * Return true if qr code login is supported by the server, false otherwise.
-     */
-    suspend fun isQrLoginSupported(homeServerConnectionConfig: HomeServerConnectionConfig): Boolean
 
     /**
      * Authenticate using m.login.token method during sign in with QR code.

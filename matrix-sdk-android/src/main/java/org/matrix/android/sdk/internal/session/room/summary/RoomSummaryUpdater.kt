@@ -18,12 +18,11 @@ package org.matrix.android.sdk.internal.session.room.summary
 
 import io.realm.Realm
 import io.realm.kotlin.createObject
-import kotlinx.coroutines.runBlocking
 import org.matrix.android.sdk.api.extensions.orFalse
-import org.matrix.android.sdk.api.extensions.tryOrNull
 import org.matrix.android.sdk.api.session.events.model.EventType
 import org.matrix.android.sdk.api.session.events.model.content.EncryptionEventContent
 import org.matrix.android.sdk.api.session.events.model.toModel
+import org.matrix.android.sdk.api.session.homeserver.HomeServerCapabilitiesService
 import org.matrix.android.sdk.api.session.room.accountdata.RoomAccountDataTypes
 import org.matrix.android.sdk.api.session.room.model.Membership
 import org.matrix.android.sdk.api.session.room.model.PowerLevelsContent
@@ -39,8 +38,7 @@ import org.matrix.android.sdk.api.session.room.powerlevels.PowerLevelsHelper
 import org.matrix.android.sdk.api.session.room.send.SendState
 import org.matrix.android.sdk.api.session.sync.model.RoomSyncSummary
 import org.matrix.android.sdk.api.session.sync.model.RoomSyncUnreadNotifications
-import org.matrix.android.sdk.internal.crypto.EventDecryptor
-import org.matrix.android.sdk.internal.crypto.crosssigning.DefaultCrossSigningService
+import org.matrix.android.sdk.api.session.sync.model.RoomSyncUnreadThreadNotifications
 import org.matrix.android.sdk.internal.database.mapper.ContentMapper
 import org.matrix.android.sdk.internal.database.mapper.asDomain
 import org.matrix.android.sdk.internal.database.model.CurrentStateEventEntity
@@ -63,6 +61,7 @@ import org.matrix.android.sdk.internal.session.room.accountdata.RoomAccountDataD
 import org.matrix.android.sdk.internal.session.room.membership.RoomDisplayNameResolver
 import org.matrix.android.sdk.internal.session.room.membership.RoomMemberHelper
 import org.matrix.android.sdk.internal.session.room.relationship.RoomChildRelationInfo
+import org.matrix.android.sdk.internal.session.room.timeline.RoomSummaryEventDecryptor
 import org.matrix.android.sdk.internal.session.sync.SyncResponsePostTreatmentAggregator
 import timber.log.Timber
 import javax.inject.Inject
@@ -72,15 +71,16 @@ internal class RoomSummaryUpdater @Inject constructor(
         @UserId private val userId: String,
         private val roomDisplayNameResolver: RoomDisplayNameResolver,
         private val roomAvatarResolver: RoomAvatarResolver,
-        private val eventDecryptor: EventDecryptor,
-        private val crossSigningService: DefaultCrossSigningService,
-        private val roomAccountDataDataSource: RoomAccountDataDataSource
+        private val roomAccountDataDataSource: RoomAccountDataDataSource,
+        private val homeServerCapabilitiesService: HomeServerCapabilitiesService,
+        private val roomSummaryEventDecryptor: RoomSummaryEventDecryptor,
+        private val roomSummaryEventsHelper: RoomSummaryEventsHelper,
 ) {
 
     fun refreshLatestPreviewContent(realm: Realm, roomId: String) {
         val roomSummaryEntity = RoomSummaryEntity.getOrNull(realm, roomId)
         if (roomSummaryEntity != null) {
-            val latestPreviewableEvent = RoomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
+            val latestPreviewableEvent = roomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
             latestPreviewableEvent?.attemptToDecrypt()
         }
     }
@@ -91,6 +91,7 @@ internal class RoomSummaryUpdater @Inject constructor(
             membership: Membership? = null,
             roomSummary: RoomSyncSummary? = null,
             unreadNotifications: RoomSyncUnreadNotifications? = null,
+            unreadThreadNotifications: Map<String, RoomSyncUnreadThreadNotifications>? = null,
             updateMembers: Boolean = false,
             inviterId: String? = null,
             aggregator: SyncResponsePostTreatmentAggregator? = null
@@ -110,6 +111,14 @@ internal class RoomSummaryUpdater @Inject constructor(
         }
         roomSummaryEntity.highlightCount = unreadNotifications?.highlightCount ?: 0
         roomSummaryEntity.notificationCount = unreadNotifications?.notificationCount ?: 0
+
+        roomSummaryEntity.threadHighlightCount = unreadThreadNotifications
+                ?.count { (it.value.highlightCount ?: 0) > 0 }
+                ?: 0
+
+        roomSummaryEntity.threadNotificationCount = unreadThreadNotifications
+                ?.count { (it.value.notificationCount ?: 0) > 0 }
+                ?: 0
 
         if (membership != null) {
             roomSummaryEntity.membership = membership
@@ -133,7 +142,7 @@ internal class RoomSummaryUpdater @Inject constructor(
         val encryptionEvent = CurrentStateEventEntity.getOrNull(realm, roomId, type = EventType.STATE_ROOM_ENCRYPTION, stateKey = "")?.root
         Timber.d("## CRYPTO: currentEncryptionEvent is $encryptionEvent")
 
-        val latestPreviewableEvent = RoomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
+        val latestPreviewableEvent = roomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
 
         val lastActivityFromEvent = latestPreviewableEvent?.root?.originServerTs
         if (lastActivityFromEvent != null) {
@@ -141,9 +150,11 @@ internal class RoomSummaryUpdater @Inject constructor(
             latestPreviewableEvent.attemptToDecrypt()
         }
 
+        val shouldCheckIfReadInEventsThread = homeServerCapabilitiesService.getHomeServerCapabilities().canUseThreadReadReceiptsAndNotifications
+
         roomSummaryEntity.hasUnreadMessages = roomSummaryEntity.notificationCount > 0 ||
                 // avoid this call if we are sure there are unread events
-                latestPreviewableEvent?.let { !isEventRead(realm.configuration, userId, roomId, it.eventId) } ?: false
+                latestPreviewableEvent?.let { !isEventRead(realm.configuration, userId, roomId, it.eventId, shouldCheckIfReadInEventsThread) } ?: false
 
         roomSummaryEntity.setDisplayName(roomDisplayNameResolver.resolve(realm, roomId))
         roomSummaryEntity.avatarUrl = roomAvatarResolver.resolve(realm, roomId)
@@ -157,6 +168,9 @@ internal class RoomSummaryUpdater @Inject constructor(
         val roomAliases = ContentMapper.map(lastAliasesEvent?.content).toModel<RoomAliasesContent>()?.aliases
                 .orEmpty()
         roomSummaryEntity.updateAliases(roomAliases)
+
+        val wasEncrypted = roomSummaryEntity.isEncrypted
+
         roomSummaryEntity.isEncrypted = encryptionEvent != null
 
         roomSummaryEntity.e2eAlgorithm = ContentMapper.map(encryptionEvent?.content)
@@ -181,15 +195,18 @@ internal class RoomSummaryUpdater @Inject constructor(
 
             roomSummaryEntity.otherMemberIds.clear()
             roomSummaryEntity.otherMemberIds.addAll(otherRoomMembers)
-            if (roomSummaryEntity.isEncrypted && otherRoomMembers.isNotEmpty()) {
-                if (aggregator == null) {
-                    // Do it now
-                    // mmm maybe we could only refresh shield instead of checking trust also?
-                    crossSigningService.checkTrustAndAffectedRoomShields(otherRoomMembers)
-                } else {
-                    // Schedule it
-                    aggregator.userIdsForCheckingTrustAndAffectedRoomShields.addAll(otherRoomMembers)
-                }
+            if (roomSummary?.joinedMembersCount == null) {
+                // in case m.joined_member_count from sync summary was null?
+                // better to use what we know
+                roomSummaryEntity.joinedMembersCount = otherRoomMembers.size + 1
+            }
+        }
+
+        if (roomSummaryEntity.isEncrypted) {
+            if (!wasEncrypted || updateMembers || roomSummaryEntity.roomEncryptionTrustLevel == null) {
+                // trigger a shield update
+                // if users add devices/keys or signatures the device list manager will trigger a refresh
+                aggregator?.roomsWithMembershipChangesForShieldUpdate?.add(roomId)
             }
         }
     }
@@ -200,12 +217,7 @@ internal class RoomSummaryUpdater @Inject constructor(
                 Timber.v("Decryption skipped due to missing root event $eventId")
             }
             else -> {
-                if (root.type == EventType.ENCRYPTED && root.decryptionResultJson == null) {
-                    Timber.v("Should decrypt $eventId")
-                    tryOrNull {
-                        runBlocking { eventDecryptor.decryptEvent(root.asDomain(), "") }
-                    }?.let { root.setDecryptionResult(it) }
-                }
+                roomSummaryEventDecryptor.requestDecryption(root.asDomain())
             }
         }
     }
@@ -217,7 +229,7 @@ internal class RoomSummaryUpdater @Inject constructor(
     fun updateSendingInformation(realm: Realm, roomId: String) {
         val roomSummaryEntity = RoomSummaryEntity.getOrCreate(realm, roomId)
         roomSummaryEntity.updateHasFailedSending()
-        roomSummaryEntity.latestPreviewableEvent = RoomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
+        roomSummaryEntity.latestPreviewableEvent = roomSummaryEventsHelper.getLatestPreviewableEvent(realm, roomId)
     }
 
     /**
@@ -397,7 +409,7 @@ internal class RoomSummaryUpdater @Inject constructor(
                         val relatedSpaces = lookupMap.keys
                                 .filter { it.roomType == RoomType.SPACE }
                                 .filter {
-                                    dmRoom.otherMemberIds.toList().intersect(it.otherMemberIds.toList()).isNotEmpty()
+                                    dmRoom.otherMemberIds.toList().intersect(it.otherMemberIds.toSet()).isNotEmpty()
                                 }
                                 .map { it.roomId }
                                 .distinct()

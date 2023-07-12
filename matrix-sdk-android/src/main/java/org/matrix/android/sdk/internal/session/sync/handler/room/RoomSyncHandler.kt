@@ -19,12 +19,12 @@ package org.matrix.android.sdk.internal.session.sync.handler.room
 import dagger.Lazy
 import io.realm.Realm
 import io.realm.kotlin.createObject
-import kotlinx.coroutines.runBlocking
 import org.matrix.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
-import org.matrix.android.sdk.api.session.crypto.MXCryptoError
 import org.matrix.android.sdk.api.session.crypto.model.OlmDecryptionResult
 import org.matrix.android.sdk.api.session.events.model.Event
 import org.matrix.android.sdk.api.session.events.model.EventType
+import org.matrix.android.sdk.api.session.events.model.RelationType
+import org.matrix.android.sdk.api.session.events.model.getRelationContent
 import org.matrix.android.sdk.api.session.events.model.toModel
 import org.matrix.android.sdk.api.session.homeserver.HomeServerCapabilitiesService
 import org.matrix.android.sdk.api.session.room.model.Membership
@@ -39,7 +39,6 @@ import org.matrix.android.sdk.api.session.sync.model.LazyRoomSyncEphemeral
 import org.matrix.android.sdk.api.session.sync.model.RoomSync
 import org.matrix.android.sdk.api.session.sync.model.RoomsSyncResponse
 import org.matrix.android.sdk.api.settings.LightweightSettingsStorage
-import org.matrix.android.sdk.internal.crypto.DefaultCryptoService
 import org.matrix.android.sdk.internal.crypto.algorithms.megolm.UnRequestedForwardManager
 import org.matrix.android.sdk.internal.database.helper.addIfNecessary
 import org.matrix.android.sdk.internal.database.helper.addTimelineEvent
@@ -49,6 +48,7 @@ import org.matrix.android.sdk.internal.database.mapper.asDomain
 import org.matrix.android.sdk.internal.database.mapper.toEntity
 import org.matrix.android.sdk.internal.database.model.ChunkEntity
 import org.matrix.android.sdk.internal.database.model.CurrentStateEventEntity
+import org.matrix.android.sdk.internal.database.model.EventAnnotationsSummaryEntity
 import org.matrix.android.sdk.internal.database.model.EventEntity
 import org.matrix.android.sdk.internal.database.model.EventInsertType
 import org.matrix.android.sdk.internal.database.model.RoomEntity
@@ -89,7 +89,6 @@ internal class RoomSyncHandler @Inject constructor(
         private val readReceiptHandler: ReadReceiptHandler,
         private val roomSummaryUpdater: RoomSummaryUpdater,
         private val roomAccountDataHandler: RoomSyncAccountDataHandler,
-        private val cryptoService: DefaultCryptoService,
         private val roomMemberEventHandler: RoomMemberEventHandler,
         private val roomTypingUsersHandler: RoomTypingUsersHandler,
         private val threadsAwarenessHandler: ThreadsAwarenessHandler,
@@ -196,7 +195,7 @@ internal class RoomSyncHandler @Inject constructor(
                                                 roomSync = handlingStrategy.data[it] ?: error("Should not happen"),
                                                 insertType = EventInsertType.INITIAL_SYNC,
                                                 syncLocalTimestampMillis = syncLocalTimeStampMillis,
-                                                aggregator
+                                                aggregator = aggregator,
                                         )
                                     }
                             realm.insertOrUpdate(roomEntities)
@@ -254,8 +253,6 @@ internal class RoomSyncHandler @Inject constructor(
                     eventId = event.eventId
                     root = eventEntity
                 }
-                // Give info to crypto module
-                cryptoService.onStateEvent(roomId, event)
                 roomMemberEventHandler.handle(realm, roomId, event, isInitialSync, aggregator)
             }
         }
@@ -287,6 +284,7 @@ internal class RoomSyncHandler @Inject constructor(
                 Membership.JOIN,
                 roomSync.summary,
                 roomSync.unreadNotifications,
+                roomSync.unreadThreadNotifications,
                 updateMembers = hasRoomMember,
                 aggregator = aggregator
         )
@@ -372,7 +370,15 @@ internal class RoomSyncHandler @Inject constructor(
         roomEntity.chunks.clearWith { it.deleteOnCascade(deleteStateEvents = true, canDeleteRoot = true) }
         roomTypingUsersHandler.handle(realm, roomId, null)
         roomChangeMembershipStateDataSource.setMembershipFromSync(roomId, Membership.LEAVE)
-        roomSummaryUpdater.update(realm, roomId, membership, roomSync.summary, roomSync.unreadNotifications, aggregator = aggregator)
+        roomSummaryUpdater.update(
+                realm,
+                roomId,
+                membership,
+                roomSync.summary,
+                roomSync.unreadNotifications,
+                roomSync.unreadThreadNotifications,
+                aggregator = aggregator,
+        )
         return roomEntity
     }
 
@@ -408,7 +414,7 @@ internal class RoomSyncHandler @Inject constructor(
             // It's annoying roomId is not there, but lot of code rely on it.
             // And had to do it now as copy would delete all decryption results..
             val ageLocalTs = syncLocalTimestampMillis - (rawEvent.unsignedData?.age ?: 0)
-            val event = rawEvent.copy(roomId = roomId).also {
+            val event = rawEvent.copyAll(roomId = roomId).also {
                 it.ageLocalTs = ageLocalTs
             }
             if (event.eventId == null || event.senderId == null || event.type == null) {
@@ -418,15 +424,10 @@ internal class RoomSyncHandler @Inject constructor(
             val isInitialSync = insertType == EventInsertType.INITIAL_SYNC
 
             eventIds.add(event.eventId)
-            liveEventService.get().dispatchLiveEventReceived(event, roomId, isInitialSync)
-
-            if (event.isEncrypted() && !isInitialSync) {
-                try {
-                    decryptIfNeeded(event, roomId)
-                } catch (e: InterruptedException) {
-                    Timber.i("Decryption got interrupted")
-                }
+            if (!isInitialSync) {
+                liveEventService.get().dispatchLiveEventReceived(event, roomId)
             }
+
             var contentToInject: String? = null
             if (!isInitialSync) {
                 contentToInject = threadsAwarenessHandler.makeEventThreadAware(realm, roomId, event)
@@ -481,26 +482,46 @@ internal class RoomSyncHandler @Inject constructor(
                 }
             }
             // Give info to crypto module
-            cryptoService.onLiveEvent(roomEntity.roomId, event, isInitialSync)
+//            runBlocking {
+//                cryptoService.onLiveEvent(roomEntity.roomId, event, isInitialSync)
+//            }
 
             // Try to remove local echo
-            event.unsignedData?.transactionId?.also {
-                val sendingEventEntity = roomEntity.sendingTimelineEvents.find(it)
+            event.unsignedData?.transactionId?.also { txId ->
+                val sendingEventEntity = roomEntity.sendingTimelineEvents.find(txId)
                 if (sendingEventEntity != null) {
-                    Timber.v("Remove local echo for tx:$it")
+                    Timber.v("Remove local echo for tx:$txId")
                     roomEntity.sendingTimelineEvents.remove(sendingEventEntity)
                     if (event.isEncrypted() && event.content?.get("algorithm") as? String == MXCRYPTO_ALGORITHM_MEGOLM) {
-                        // updated with echo decryption, to avoid seeing it decrypt again
+                        // updated with echo decryption, to avoid seeing txId decrypt again
                         val adapter = MoshiProvider.providesMoshi().adapter<OlmDecryptionResult>(OlmDecryptionResult::class.java)
                         sendingEventEntity.root?.decryptionResultJson?.let { json ->
                             eventEntity.decryptionResultJson = json
                             event.mxDecryptionResult = adapter.fromJson(json)
                         }
                     }
+                    // also update potential edit that could refer to that event?
+                    // If not display will flicker :/
+                    val relationContent = event.getRelationContent()
+                    if (relationContent?.type == RelationType.REPLACE) {
+                        relationContent.eventId?.let { targetId ->
+                            EventAnnotationsSummaryEntity.where(realm, roomId, targetId)
+                                    .findFirst()
+                                    ?.editSummary
+                                    ?.editions
+                                    ?.forEach {
+                                        if (it.eventId == txId) {
+                                            // just do that, the aggregation processor will to the rest
+                                            it.event = eventEntity
+                                        }
+                                    }
+                        }
+                    }
+
                     // Finally delete the local echo
                     sendingEventEntity.deleteOnCascade(true)
                 } else {
-                    Timber.v("Can't find corresponding local echo for tx:$it")
+                    Timber.v("Can't find corresponding local echo for tx:$txId")
                 }
             }
         }
@@ -542,31 +563,6 @@ internal class RoomSyncHandler @Inject constructor(
             threadChunk.timelineEvents.add(0, timelineEventEntity)
             roomEntity.addIfNecessary(threadChunk)
         }
-    }
-
-    private fun decryptIfNeeded(event: Event, roomId: String) {
-        try {
-            val timelineId = generateTimelineId(roomId)
-            // Event from sync does not have roomId, so add it to the event first
-            // note: runBlocking should be used here while we are in realm single thread executor, to avoid thread switching
-            val result = runBlocking { cryptoService.decryptEvent(event.copy(roomId = roomId), timelineId) }
-            event.mxDecryptionResult = OlmDecryptionResult(
-                    payload = result.clearEvent,
-                    senderKey = result.senderCurve25519Key,
-                    keysClaimed = result.claimedEd25519Key?.let { k -> mapOf("ed25519" to k) },
-                    forwardingCurve25519KeyChain = result.forwardingCurve25519KeyChain,
-                    isSafe = result.isSafe
-            )
-        } catch (e: MXCryptoError) {
-            if (e is MXCryptoError.Base) {
-                event.mCryptoError = e.errorType
-                event.mCryptoErrorReason = e.technicalMessage.takeIf { it.isNotEmpty() } ?: e.detailedErrorDescription
-            }
-        }
-    }
-
-    private fun generateTimelineId(roomId: String): String {
-        return "RoomSyncHandler$roomId"
     }
 
     data class EphemeralResult(
