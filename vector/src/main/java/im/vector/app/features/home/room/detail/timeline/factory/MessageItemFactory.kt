@@ -16,10 +16,9 @@
 
 package im.vector.app.features.home.room.detail.timeline.factory
 
-import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import android.graphics.ImageDecoder.OnHeaderDecodedListener
 import android.graphics.drawable.AnimatedImageDrawable
-import android.net.Uri
 import android.os.Build
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -28,19 +27,15 @@ import android.text.TextPaint
 import android.text.style.AbsoluteSizeSpan
 import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
-import android.util.Base64
 import android.view.View
-import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
-import com.squareup.moshi.Moshi
 import dagger.Lazy
 import im.vector.app.R
 import im.vector.app.core.epoxy.ClickListener
 import im.vector.app.core.epoxy.VectorEpoxyModel
 import im.vector.app.core.extensions.getVectorLastMessageContent
 import im.vector.app.core.files.LocalFilesHelper
-import im.vector.app.core.intent.getMimeTypeFromUri
 import im.vector.app.core.resources.ColorProvider
 import im.vector.app.core.resources.StringProvider
 import im.vector.app.core.utils.DimensionConverter
@@ -93,10 +88,9 @@ import im.vector.app.features.voice.AudioWaveformView
 import im.vector.app.features.voicebroadcast.isVoiceBroadcast
 import im.vector.app.features.voicebroadcast.model.MessageVoiceBroadcastInfoContent
 import im.vector.lib.core.utils.epoxy.charsequence.toEpoxyCharSequence
-import kotlinx.coroutines.runBlocking
 import im.vector.lib.core.utils.timer.Clock
+import kotlinx.coroutines.runBlocking
 import me.gujun.android.span.span
-import org.json.JSONObject
 import org.matrix.android.sdk.api.MatrixUrls.isMxcUrl
 import org.matrix.android.sdk.api.query.QueryStringValue
 import org.matrix.android.sdk.api.session.Session
@@ -133,8 +127,6 @@ import org.matrix.android.sdk.api.session.room.model.relation.ReplyToContent
 import org.matrix.android.sdk.api.session.room.timeline.getRelationContent
 import org.matrix.android.sdk.api.settings.LightweightSettingsStorage
 import org.matrix.android.sdk.api.util.MimeTypes
-import timber.log.Timber
-import java.nio.file.Files
 import javax.inject.Inject
 
 class MessageItemFactory @Inject constructor(
@@ -191,11 +183,15 @@ class MessageItemFactory @Inject constructor(
                     elementToDecrypt = value.toElementToDecrypt()
             ))
             val source=ImageDecoder.createSource(file)
-            val drawable = ImageDecoder.decodeDrawable(source)
+            var mimetype="image/gif"
+            val listener =
+                    OnHeaderDecodedListener { decoder, info, source -> mimetype = info.mimeType }
+
+            val drawable = ImageDecoder.decodeDrawable(source, listener)
             if (drawable is AnimatedImageDrawable) {
                 file=(session.fileService().downloadFile(
                         fileName = key,
-                        mimeType = "image/gif",
+                        mimeType = mimetype,
                         url = value.url,
                         elementToDecrypt = value.toElementToDecrypt()
                 ))

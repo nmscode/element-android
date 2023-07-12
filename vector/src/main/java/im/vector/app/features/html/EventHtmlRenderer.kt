@@ -28,23 +28,18 @@ package im.vector.app.features.html
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.ImageDecoder
-import android.graphics.drawable.AnimatedImageDrawable
 import android.graphics.Typeface
-import android.graphics.drawable.Drawable
+import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.os.Build
 import android.text.Spannable
-import androidx.annotation.RequiresApi
 import android.text.SpannableStringBuilder
 import android.text.style.StrikethroughSpan
 import android.text.style.URLSpan
 import android.text.style.UnderlineSpan
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.core.text.toSpannable
-import com.bumptech.glide.Glide
-import com.bumptech.glide.RequestBuilder
-import com.bumptech.glide.load.resource.gif.GifDrawable
-import com.bumptech.glide.request.target.Target
 import im.vector.app.core.di.ActiveSessionHolder
 import im.vector.app.core.resources.ColorProvider
 import im.vector.app.core.utils.DimensionConverter
@@ -60,13 +55,11 @@ import io.noties.markwon.core.spans.StrongEmphasisSpan
 import io.noties.markwon.ext.latex.JLatexMathPlugin
 import io.noties.markwon.ext.latex.JLatexMathTheme
 import io.noties.markwon.html.HtmlPlugin
+import io.noties.markwon.image.ImageItem
 import io.noties.markwon.image.ImagesPlugin
+import io.noties.markwon.image.SchemeHandler
 import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.gif.GifMediaDecoder
-import io.noties.markwon.image.AsyncDrawable
-import io.noties.markwon.image.ImageItem
-import io.noties.markwon.image.SchemeHandler
-import io.noties.markwon.image.glide.GlideImagesPlugin
 import io.noties.markwon.inlineparser.EntityInlineProcessor
 import io.noties.markwon.inlineparser.HtmlInlineProcessor
 import io.noties.markwon.inlineparser.MarkwonInlineParser
@@ -76,11 +69,8 @@ import me.gujun.android.span.style.CustomTypefaceSpan
 import org.commonmark.node.Emphasis
 import org.commonmark.node.Node
 import org.commonmark.parser.Parser
-import org.matrix.android.sdk.api.MatrixUrls.isMxcUrl
 import org.matrix.android.sdk.api.session.crypto.attachments.toElementToDecrypt
 import timber.log.Timber
-import java.io.InputStream
-import java.net.URL
 import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -115,20 +105,28 @@ class EventHtmlRenderer @Inject constructor(
                                 )
                     }
 
-                    val source = ImageDecoder.createSource(result)
-                    var drawable = ImageDecoder.decodeDrawable(source)
-                    if (drawable is AnimatedImageDrawable) {
+                    var source = ImageDecoder.createSource(result)
 
-                        result = runBlocking {
+                    var mimetype="image/gif"
+                    val listener =
+                            ImageDecoder.OnHeaderDecodedListener { decoder, info, source -> mimetype = info.mimeType }
+
+                    var drawable = ImageDecoder.decodeDrawable(source, listener)
+                    if (drawable is AnimatedImageDrawable) {
+                            result = runBlocking {
                             activeSessionHolder.getActiveSession().fileService()
                                     .downloadFile(
                                             fileName = raw,
-                                            mimeType = "image/gif",
+                                            mimeType = mimetype,
                                             url = raw,
                                             elementToDecrypt = null
                                     )
                         }
-                        drawable = pl.droidsonroids.gif.GifDrawable(result)
+                        source=ImageDecoder.createSource(result)
+                        drawable = ImageDecoder.decodeDrawable(source, listener)
+                        if (drawable is AnimatedImageDrawable) {
+                            drawable.start()
+                        }
                     }
 
                     return ImageItem.withResult(drawable)
@@ -142,7 +140,6 @@ class EventHtmlRenderer @Inject constructor(
                     plugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context))
                 }
             })
-
 
     private val latexPlugins = listOf(
             object : AbstractMarkwonPlugin() {
