@@ -30,3 +30,9 @@ Cargo.lock
 
 # For manual dependency to rust crypto sdk
 library/rustCrypto/matrix-rust-sdk-crypto.aar
+vector-app/fdroidRustCrypto/release/output-metadata.json
+vector-app/fdroidRustCrypto/release/vector-fdroid-rustCrypto-arm64-v8a-release.apk
+vector-app/fdroidRustCrypto/release/vector-fdroid-rustCrypto-armeabi-v7a-release.apk
+vector-app/fdroidRustCrypto/release/vector-fdroid-rustCrypto-universal-release.apk
+vector-app/fdroidRustCrypto/release/vector-fdroid-rustCrypto-x86-release.apk
+vector-app/fdroidRustCrypto/release/vector-fdroid-rustCrypto-x86_64-release.apk

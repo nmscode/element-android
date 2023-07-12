@@ -712,7 +712,7 @@ class MessageItemFactory @Inject constructor(
         } else if (emotesBody!=messageContent.body){
             buildFormattedTextItem(emotesBody, informationData, highlight, callback, attributes, replyToContent)
         } else {
-            buildMessageTextItem(messageContent.body, false, informationData, highlight, callback, attributes, replyToContent)
+            buildMessageTextItem(messageContent.body, false, informationData, highlight, callback, attributes)
         }
     }
 
